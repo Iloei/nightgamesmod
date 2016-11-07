@@ -6,7 +6,6 @@ import nightgames.global.Flag;
 import nightgames.global.Global;
 import nightgames.items.Item;
 import nightgames.items.clothing.Clothing;
-import java.util.Map;
 import nightgames.items.clothing.ClothingSlot;
 
 public class XxxStore extends Store {
@@ -21,6 +20,7 @@ public class XxxStore extends Store {
         add(Item.Crop);
         add(Item.Tickler);
         add(Item.Strapon);
+        add(Item.Blindfold);
     }
 
     @Override
@@ -65,6 +65,7 @@ public class XxxStore extends Store {
                                                 + "joke. You didn't have to grope me so roughly. My name is Alice.\"<p>");
                 Global.flag(Flag.metAlice);
                 player.mod(Attribute.Submissive, 1);
+                acted = true;
             }
             if (choice.startsWith("Talk to Alice")) {
                 Global.gui().message(
@@ -88,6 +89,7 @@ public class XxxStore extends Store {
 
                 Global.unflag(Flag.AliceAvailable);
                 player.mod(Attribute.Submissive, 1);
+                acted = true;
             }
 
             Global.gui().message("The adult specialty store stocks several items that could be useful during a match.");
@@ -142,7 +144,7 @@ public class XxxStore extends Store {
             } else {
                 Global.gui().sale(this, Item.Strapon);
             }
-
+            Global.gui().sale(this, Item.Blindfold);
             displayClothes();
             if (Global.checkFlag(Flag.AliceAvailable)) {
                 Global.gui().message(
@@ -161,7 +163,7 @@ public class XxxStore extends Store {
         if (!npc.has(Item.Lubricant, 10)) {
             int i = Math.min(budget / Item.Lubricant.getPrice(), 10 - npc.count(Item.Lubricant));
             npc.gain(Item.Lubricant, i);
-            budget -= i * Item.Lubricant.getPrice();
+            //budget -= i * Item.Lubricant.getPrice();
             npc.money -= i * Item.Lubricant.getPrice();
         }
     }

@@ -9,9 +9,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.json.simple.JSONArray;
-import org.json.simple.JSONValue;
-import org.json.simple.parser.ParseException;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonParser;
 
 import nightgames.Resources.ResourceLoader;
 import nightgames.characters.Character;
@@ -20,63 +20,59 @@ import nightgames.characters.Trait;
 import nightgames.global.DebugFlags;
 import nightgames.global.Global;
 import nightgames.items.Loot;
+import nightgames.json.JsonUtils;
 
 public class Clothing implements Loot {
     public static final int N_LAYERS = 5;
     public static Map<String, Clothing> clothingTable;
 
     public static void buildClothingTable() {
-        clothingTable = new HashMap<String, Clothing>();
-        try {
-            JSONArray value = (JSONArray) JSONValue.parseWithException(new InputStreamReader(
-                            ResourceLoader.getFileResourceAsStream("data/clothing/defaults.json")));
-            JSONClothingLoader.loadClothingListFromJSON(value).forEach(article -> {
+        clothingTable = new HashMap<>();
+        try (InputStreamReader inputstreamreader = new InputStreamReader(
+                        ResourceLoader.getFileResourceAsStream("data/clothing/defaults.json"))) {
+            JsonArray defaultClothesJson = JsonUtils.rootJson(inputstreamreader).getAsJsonArray();
+            JsonClothingLoader.loadClothingListFromJson(defaultClothesJson).forEach(article -> {
                 clothingTable.put(article.id, article);
                 if (Global.isDebugOn(DebugFlags.DEBUG_LOADING)) {
                     System.out.println("Loaded " + article.id);
                 }
             });
-        } catch (ClassCastException e) {
-            e.printStackTrace();
-        } catch (ParseException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
+        } catch (ClassCastException | JsonParseException | IOException e) {
             e.printStackTrace();
         }
-        ResourceLoader.getFileResourcesFromDirectory("data/clothing").forEach(inputstream -> {
-            try {
-                JSONArray value = (JSONArray) JSONValue.parseWithException(new InputStreamReader(inputstream));
-                JSONClothingLoader.loadClothingListFromJSON(value).forEach(article -> {
-                    clothingTable.put(article.id, article);
-                    if (Global.isDebugOn(DebugFlags.DEBUG_LOADING)) {
-                        System.out.println("Loaded " + article.id);
-                    }
-                });
-            } catch (ClassCastException e) {
-                e.printStackTrace();
-            } catch (ParseException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        });
+        ResourceLoader.getFileResourcesFromDirectory("data/clothing")
+                      .forEach(inputstream -> {
+                          try (InputStreamReader inputstreamreader = new InputStreamReader(inputstream)) {
+                              JsonArray clothesJson = new JsonParser().parse(inputstreamreader).getAsJsonArray();
+                              JsonClothingLoader.loadClothingListFromJson(clothesJson).forEach(article -> {
+                                  clothingTable.put(article.id, article);
+                                  if (Global.isDebugOn(DebugFlags.DEBUG_LOADING)) {
+                                      System.out.println("Loaded " + article.id);
+                                  }
+                              });
+                          } catch (ClassCastException | JsonParseException | IOException e) {
+                              e.printStackTrace();
+                          }
+                      });
     }
 
     String name;
     int dc;
     String prefix;
-    List<ClothingTrait> attributes;
-    List<String> stores;
-    List<Trait> buffs;
-    private List<ClothingSlot> slots;
-    List<CharacterSex> sex;
+    Set<ClothingTrait> attributes;
+    Set<String> stores;
+    Set<Trait> buffs;
+    Set<ClothingSlot> slots;
+    Set<CharacterSex> sex;
     int price;
     double exposure;
-    String id;
+    final String id;
     double hotness;
-    private int layer;
+    int layer;
 
-    Clothing() {}
+    Clothing(String id) {
+        this.id = id;
+    }
 
     @Override
     public String getName() {
@@ -84,10 +80,10 @@ public class Clothing implements Loot {
     }
 
     public int dc(Character attacker) {
-        if (attacker != null && attacker.has(Trait.bramaster) && layer <= 1 && slots.contains(ClothingSlot.top)) {
+        if (attacker != null && attacker.has(Trait.dexterous) && layer <= 1 && slots.contains(ClothingSlot.top)) {
             return dc / 4;
         }
-        if (attacker != null && attacker.has(Trait.pantymaster) && layer <= 1 && slots.contains(ClothingSlot.bottom)) {
+        if (attacker != null && attacker.has(Trait.dexterous) && layer <= 1 && slots.contains(ClothingSlot.bottom)) {
             return dc / 4;
         }
         return dc;
@@ -106,11 +102,11 @@ public class Clothing implements Loot {
         return buffs.contains(test);
     }
 
-    public List<Trait> buffs() {
+    public Set<Trait> buffs() {
         return buffs;
     }
 
-    public List<ClothingTrait> attributes() {
+    public Set<ClothingTrait> attributes() {
         return attributes;
     }
 
@@ -125,8 +121,6 @@ public class Clothing implements Loot {
             owner.gain(this);
         }
     }
-
-    public static Set<Clothing> femaleOnlyClothing;
 
     public static Clothing getByID(String key) {
         Clothing results = clothingTable.get(key);
@@ -152,12 +146,8 @@ public class Clothing implements Loot {
         this.layer = layer;
     }
 
-    public List<ClothingSlot> getSlots() {
+    public Set<ClothingSlot> getSlots() {
         return slots;
-    }
-
-    public void setSlots(List<ClothingSlot> slots) {
-        this.slots = slots;
     }
 
     public double getHotness() {
@@ -175,9 +165,12 @@ public class Clothing implements Loot {
     }
 
     public static List<Clothing> getAllBuyableFrom(String shopName) {
-        return clothingTable.values().stream().filter(article -> {
-            return article.stores.contains(shopName);
-        }).collect(Collectors.toList());
+        return clothingTable.values()
+                            .stream()
+                            .filter(article -> {
+                                return article.stores.contains(shopName);
+                            })
+                            .collect(Collectors.toList());
     }
 
     public String getToolTip() {
@@ -187,11 +180,7 @@ public class Clothing implements Loot {
         sb.append(getName());
         if (!getSlots().isEmpty()) {
             sb.append("<br>Slots: [");
-            sb.append(getSlots().stream().reduce((a, b) -> {
-                sb.append(a.name());
-                sb.append(", ");
-                return b;
-            }).get().name());
+            sb.append(slots.stream().map(ClothingSlot::name).collect(Collectors.joining(", ")));
             sb.append(']');
         }
         sb.append("<br>Layer: ");
@@ -202,25 +191,25 @@ public class Clothing implements Loot {
         sb.append(format.format(getExposure()));
         if (!attributes().isEmpty()) {
             sb.append("<br>Attributes: [");
-            sb.append(attributes().stream().reduce((a, b) -> {
-                sb.append(a.getName());
-                sb.append(", ");
-                return b;
-            }).get().name());
+            sb.append(attributes.stream().map(ClothingTrait::name).collect(Collectors.joining(", ")));
             sb.append(']');
         }
         if (!buffs().isEmpty()) {
             sb.append("<br>Buffs: [");
-            sb.append(buffs().stream().reduce((a, b) -> {
-                sb.append(a.toString());
-                sb.append(", ");
-                return b;
-            }).get().name());
+            sb.append(buffs.stream().map(Trait::name).collect(Collectors.joining(", ")));
             sb.append(']');
         }
         sb.append("<br>Price: ");
         sb.append(getPrice());
         sb.append("</html>");
         return sb.toString();
+    }
+
+    @Override public boolean equals(Object o) {
+        return o != null && ((Clothing) o).id.equals(id);
+    }
+
+    @Override public int hashCode() {
+        return id.hashCode();
     }
 }

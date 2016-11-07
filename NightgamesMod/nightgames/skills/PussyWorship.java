@@ -7,12 +7,17 @@ import nightgames.characters.Trait;
 import nightgames.combat.Combat;
 import nightgames.combat.Result;
 import nightgames.global.Global;
+import nightgames.nskills.tags.SkillTag;
 import nightgames.status.BodyFetish;
 
 public class PussyWorship extends Skill {
 
     public PussyWorship(Character self) {
         super("Pussy Worship", self);
+        addTag(SkillTag.usesMouth);
+        addTag(SkillTag.pleasure);
+        addTag(SkillTag.suicidal);
+        addTag(SkillTag.worship);
     }
 
     @Override
@@ -43,14 +48,14 @@ public class PussyWorship extends Skill {
         } else if (getSelf().human()) {
             c.write(getSelf(), deal(c, m, Result.normal, target));
         }
-        target.body.pleasure(getSelf(), getSelf().body.getRandom("mouth"), target.body.getRandom("pussy"), m, c);
+        target.body.pleasure(getSelf(), getSelf().body.getRandom("mouth"), target.body.getRandom("pussy"), m, c, this);
         if (getSelf().hasDick() && (!getSelf().hasPussy() || Global.random(2) == 0)) {
-            getSelf().body.pleasure(getSelf(), getSelf().body.getRandom("hands"), getSelf().body.getRandomCock(), m, c);
+            getSelf().body.pleasure(getSelf(), getSelf().body.getRandom("hands"), getSelf().body.getRandomCock(), m, c, this);
         } else if (getSelf().hasPussy()) {
             getSelf().body.pleasure(getSelf(), getSelf().body.getRandom("hands"), getSelf().body.getRandomPussy(), m,
-                            c);
+                            c, this);
         } else {
-            getSelf().body.pleasure(getSelf(), getSelf().body.getRandom("hands"), getSelf().body.getRandomHole(), m, c);
+            getSelf().body.pleasure(getSelf(), getSelf().body.getRandom("hands"), getSelf().body.getRandomHole(), m, c, this);
         }
 
         target.buildMojo(c, 20);
@@ -97,10 +102,10 @@ public class PussyWorship extends Skill {
     @Override
     public String receive(Combat c, int damage, Result modifier, Character target) {
         return Global.format(
-                        "{self:subject} ecstatically crawls to you on {self:possessive} knees and attaches {self:possessive} {self:body-part:mouth} to "
-                                        + "{other:possessive} {other:body-part:pussy} while holding onto your legs. {self:SUBJECT} carefully takes a few licks of {other:possessive} slit before "
-                                        + "diving right in with her tongue to eat you out. Minutes pass and {self:subject} continues {self:possessive} attack on your cunt while idly playing with "
-                                        + "{self:reflective}. Feeling a bit too good, you manage to push {self:name-do} away from your sensitive womanhood lest she makes you cum accidentally.",
+                        "{self:subject} ecstatically crawls to {other:name-do} on {self:possessive} knees and attaches {self:possessive} {self:body-part:mouth} to "
+                                        + "{other:possessive} {other:body-part:pussy} while holding onto {other:possessive} legs. {self:SUBJECT} carefully takes a few licks of {other:possessive} slit before "
+                                        + "diving right in with {self:possessive} tongue to eat {other:name-do} out. Minutes pass and {self:subject} continues {self:possessive} attack on {other:name-possessive} cunt while idly playing with "
+                                        + "{self:reflective}. Feeling a bit too good, {other:pronoun-action:manage|manages} to push {self:name-do} away from {other:possessive} sensitive womanhood lest {self:pronoun} makes {other:direct-object} cum accidentally.",
                         getSelf(), target);
     }
 

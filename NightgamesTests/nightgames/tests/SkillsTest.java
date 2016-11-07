@@ -7,6 +7,7 @@ import java.util.List;
 import org.json.simple.parser.ParseException;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Test;
 
 import nightgames.actions.Movement;
 import nightgames.areas.Area;
@@ -15,15 +16,10 @@ import nightgames.characters.NPC;
 import nightgames.characters.Personality;
 import nightgames.characters.Player;
 import nightgames.characters.custom.CustomNPC;
-import nightgames.characters.custom.DataBackedNPCData;
 import nightgames.characters.custom.JSONSourceNPCDataLoader;
 import nightgames.combat.Combat;
 import nightgames.global.Global;
-import nightgames.items.clothing.Clothing;
-import nightgames.skills.Engulf;
-import nightgames.skills.FaceSit;
 import nightgames.skills.Skill;
-import nightgames.skills.Tribadism;
 import nightgames.stance.Anal;
 import nightgames.stance.AnalCowgirl;
 import nightgames.stance.AnalProne;
@@ -48,14 +44,11 @@ import nightgames.stance.Position;
 import nightgames.stance.ReverseCowgirl;
 import nightgames.stance.ReverseMount;
 import nightgames.stance.SixNine;
-import nightgames.stance.Stance;
 import nightgames.stance.Standing;
 import nightgames.stance.StandingOver;
 import nightgames.stance.TribadismStance;
 import nightgames.stance.UpsideDownFemdom;
 import nightgames.stance.UpsideDownMaledom;
-
-import org.junit.Test;
 
 public class SkillsTest {
 	List<Personality> npcs1;
@@ -66,7 +59,7 @@ public class SkillsTest {
 	@Before
 	public void prepare() throws ParseException, IOException {
 		new Global(true);
-		Global.newGame(new Player("Dummy"));
+		Global.newGame("Dummy");
 		npcs1 = new ArrayList<Personality>();
 		npcs2 = new ArrayList<Personality>();
 		try {
@@ -133,6 +126,7 @@ public class SkillsTest {
 		}
 	}
 
+	// TODO: May need to clone npc1 and npc2 here too, depending on how skills affect characters.
 	public void testCombo(Character npc1, Character npc2, Position pos) throws CloneNotSupportedException {
 		pos.top = npc1;
 		pos.bottom = npc2;
@@ -149,9 +143,9 @@ public class SkillsTest {
 					NPC npc1 = npcs1.get(i).getCharacter();
 					NPC npc2 = npcs2.get(j).getCharacter();
 					System.out.println("Testing [" + i + "]: " + npc1.getName() + " with [" + j + "]: " + npc2.getName() + " in Stance " + pos.getClass().getSimpleName());
-					testCombo(npc1, npc2, pos);
+					testCombo(npc1.clone(), npc2.clone(), pos);
 					System.out.println("Testing [" + j + "]: " + npc2.getName() + " with [" + i + "]: " + npc1.getName() + " in Stance " + pos.getClass().getSimpleName());
-					testCombo(npc1, npc2, pos);
+					testCombo(npc2.clone(), npc1.clone(), pos);
 				}
 			}
 		}

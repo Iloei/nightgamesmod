@@ -23,36 +23,61 @@ import nightgames.global.Flag;
 import nightgames.global.Global;
 import nightgames.items.Item;
 import nightgames.skills.Skill;
+import nightgames.start.NpcConfiguration;
 
 public abstract class BasePersonality implements Personality {
     /**
      *
      */
     private static final long serialVersionUID = 2279220186754458082L;
+    private String type;
     public NPC character;
     protected Growth growth;
     protected List<PreferredAttribute> preferredAttributes;
     protected CockMod preferredCockMod;
+    protected AiModifiers mods;
 
-    public interface PreferredAttribute {
-        Optional<Attribute> getPreferred(Character c);
+    protected BasePersonality() {
     }
 
-    public BasePersonality(String name, int level) {
-        this.character = new NPC(name, level, this);
+    public BasePersonality(String name, int level, Optional<NpcConfiguration> charConfig,
+                    Optional<NpcConfiguration> commonConfig) {
+        // Make the built-in character
+        type = getClass().getSimpleName();
+        character = new NPC(name, level, this);
         growth = new Growth();
         preferredCockMod = CockMod.error;
         preferredAttributes = new ArrayList<PreferredAttribute>();
         setGrowth();
+        applyBasicStats();
+        character.body.makeGenitalOrgans(character.initialGender);
+
+        // Apply config changes
+        Optional<NpcConfiguration> mergedConfig = NpcConfiguration.mergeOptionalNpcConfigs(charConfig, commonConfig);
+        mergedConfig.ifPresent(cfg -> cfg.apply(character));
+
+        character.body.finishBody(character.initialGender);
     }
 
-    public void setGrowth() {}
+    /**
+     * Apply built-in character stats. Can be later overridden by StartConfiguration.
+     */
+    // TODO: Make this data-driven, like with custom NPCs.
+    protected abstract void applyBasicStats();
+    
+    public void setCharacter(NPC c) {
+        this.character = c;
+    }
+
+    abstract public void setGrowth();
 
     @Override
     public void rest(int time) {
         if (preferredCockMod != CockMod.error && character.rank > 0) {
-            Optional<BodyPart> optDick = character.body.get("cock").stream()
-                            .filter(part -> part.getMod() != preferredCockMod).findAny();
+            Optional<BodyPart> optDick = character.body.get("cock")
+                                                       .stream()
+                                                       .filter(part -> part.getMod(character) != preferredCockMod)
+                                                       .findAny();
             if (optDick.isPresent()) {
                 CockPart part = (CockPart) optDick.get();
                 character.body.remove(part);
@@ -70,12 +95,12 @@ public abstract class BasePersonality implements Personality {
 
     @Override
     public String getType() {
-        return getClass().getSimpleName();
+        return type;
     }
 
     @Override
     public Skill act(HashSet<Skill> available, Combat c) {
-        HashSet<Skill> tactic = new HashSet<Skill>();
+        HashSet<Skill> tactic;
         Skill chosen;
         ArrayList<WeightedSkill> priority = Decider.parseSkills(available, c, character);
         if (!Global.checkFlag(Flag.dumbmode)) {
@@ -114,12 +139,15 @@ public abstract class BasePersonality implements Personality {
 
     @Override
     public String image(Combat c) {
-        String fname = character.name().toLowerCase() + "_" + character.mood.name() + ".jpg";
+        String fname = getType()
+                                .toLowerCase()
+                        + "_" + character.mood.name() + ".jpg";
         return fname;
     }
 
     public String defaultImage(Combat c) {
-        return character.name().toLowerCase() + "_confident.jpg";
+        return character.name()
+                        .toLowerCase() + "_confident.jpg";
     }
 
     public Growth getGrowth() {
@@ -129,9 +157,14 @@ public abstract class BasePersonality implements Personality {
     @Override
     public void ding() {
         growth.levelUp(character);
+        onLevelUp();
         distributePoints();
     }
 
+    protected void onLevelUp() {
+        // NOP
+    }
+    
     @Override
     public String describeAll(Combat c) {
         StringBuilder b = new StringBuilder();
@@ -168,17 +201,26 @@ public abstract class BasePersonality implements Personality {
             avail.add(Attribute.Power);
             avail.add(Attribute.Seduction);
         }
+        int noPrefAdded = 2;
         for (; character.availableAttributePoints > 0; character.availableAttributePoints--) {
             Attribute selected = null;
             // remove all the attributes that isn't in avail
-            preferred = new ArrayDeque<>(preferred.stream().filter(p -> {
-                Optional<Attribute> att = p.getPreferred(character);
-                return att.isPresent() && avail.contains(att.get());
-            }).collect(Collectors.toList()));
+            preferred = new ArrayDeque<>(preferred.stream()
+                                                  .filter(p -> {
+                                                      Optional<Attribute> att = p.getPreferred(character);
+                                                      return att.isPresent() && avail.contains(att.get());
+                                                  })
+                                                  .collect(Collectors.toList()));
             if (preferred.size() > 0) {
-                Optional<Attribute> pref = preferred.removeFirst().getPreferred(character);
-                if (pref.isPresent()) {
-                    selected = pref.get();
+                if (noPrefAdded > 1) {
+                    noPrefAdded = 0;
+                    Optional<Attribute> pref = preferred.removeFirst()
+                                                        .getPreferred(character);
+                    if (pref.isPresent()) {
+                        selected = pref.get();
+                    }
+                } else {
+                    noPrefAdded += 1;
                 }
             }
 
@@ -197,9 +239,21 @@ public abstract class BasePersonality implements Personality {
 
     @Override
     public AiModifiers getAiModifiers() {
-        return AiModifiers.getDefaultModifiers(getType());
+        if (mods == null)
+            resetAiModifiers();
+        return mods;
     }
-
+    
+    @Override
+    public void setAiModifiers(AiModifiers mods) {
+        this.mods = mods;
+    }
+    
+    @Override
+    public void resetAiModifiers() {
+        mods = AiModifiers.getDefaultModifiers(getType());
+    }
+    
     @Override
     public String resist3p(Combat c, Character target, Character assist) {
         return null;
@@ -209,8 +263,11 @@ public abstract class BasePersonality implements Personality {
     public Map<CommentSituation, String> getComments(Combat c) {
         Map<CommentSituation, String> all = CommentSituation.getDefaultComments(getType());
         Map<CommentSituation, String> applicable = new HashMap<>();
-        all.entrySet().stream().filter(e -> e.getKey().isApplicable(c, character, c.getOther(character)))
-                        .forEach(e -> applicable.put(e.getKey(), e.getValue()));
+        all.entrySet()
+           .stream()
+           .filter(e -> e.getKey()
+                         .isApplicable(c, character, c.getOther(character)))
+           .forEach(e -> applicable.put(e.getKey(), e.getValue()));
         return applicable;
     }
 }

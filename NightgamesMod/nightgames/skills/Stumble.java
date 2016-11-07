@@ -8,6 +8,8 @@ import nightgames.global.Global;
 import nightgames.stance.Mount;
 import nightgames.stance.ReverseMount;
 import nightgames.stance.Stance;
+import nightgames.status.addiction.Addiction;
+import nightgames.status.addiction.AddictionType;
 
 public class Stumble extends Skill {
 
@@ -39,6 +41,11 @@ public class Stumble extends Skill {
         }
         if (getSelf().human()) {
             c.write(deal(c, 0, Result.normal, target));
+            if (Global.getPlayer().checkAddiction(AddictionType.MIND_CONTROL, target)) {
+                Global.getPlayer().unaddictCombat(AddictionType.MIND_CONTROL, 
+                                target, Addiction.LOW_INCREASE, c);
+                c.write(getSelf(), "Acting submissively voluntarily reduces Mara's control over you.");
+            }
         } else {
             c.write(receive(c, 0, Result.normal, target));
         }
@@ -63,9 +70,11 @@ public class Stumble extends Skill {
     @Override
     public String receive(Combat c, int damage, Result modifier, Character target) {
         return String.format(
-                        "%s stumbles and falls, grabbing you to catch %sself. Unfortunately, "
-                                        + "you can't keep your balance and you fall on top of %s. Maybe that's not so unfortunate.",
-                        getSelf().name(), getSelf().directObject(), getSelf().directObject());
+                        "%s stumbles and falls, grabbing %s to catch %s. Unfortunately, "
+                                        + "%s can't keep %s balance and %s %s on top of %s. Maybe that's not so unfortunate.",
+                        getSelf().name(), target.nameDirectObject(), getSelf().reflectivePronoun(), 
+                        target.subject(), target.possessivePronoun(), target.pronoun(),
+                        target.action("fall"), getSelf().directObject());
     }
 
 }

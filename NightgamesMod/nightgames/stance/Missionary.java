@@ -16,7 +16,9 @@ public class Missionary extends MaledomSexStance {
         if (top.human()) {
             return "You are penetrating " + bottom.name() + " in traditional Missionary position.";
         } else {
-            return top.name() + "";
+            return String.format("%s between %s legs, fucking %s in the traditional Missionary position.",
+                            top.subjectAction("are", "is"), bottom.nameOrPossessivePronoun(),
+                            bottom.directObject());
         }
     }
 
@@ -110,5 +112,10 @@ public class Missionary extends MaledomSexStance {
             return new UpsideDownMaledom(top, bottom);
         }
         return new Missionary(top, bottom);
+    }
+    
+    @Override
+    public int dominance() {
+        return 3;
     }
 }

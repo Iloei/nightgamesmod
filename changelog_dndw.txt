@@ -1,3 +1,144 @@
+10/09/16 - 2.2.0
+-Added Spectator mode
+	-When encountering two opponents and you are offered the opportunity to intervene, you can now also choose to watch.
+-Added Jewel's addiction: Dominance
+	-Makes escape from submissive positions much more difficult. (Similar magnitude to being bound at high levels of addiction.)
+	-Increases pleasure received while in a submissive position.
+	-At high levels, blocks mojo gain while in a submissive position.
+	(-So as you've figured by now, this makes submissive positions pretty bad to be in.)
+	-In withdrawal, limits max stamina and causes permanent Masochistic (which makes pain cause pleasure).
+	-Will be inflicted and worsened when Jewel empties your stamina.
+	
+-Added the Scene Creator as an external application. This tool lets you more easily write scenes for custom characters.
+	-The Text tab lets you write a scene, with two characters, and displays the formatted text to the right.
+	-The Help item in the menu bar has a list of available formatting tags.
+	-The Requirements tab lets you set the requirements for your scene. Right-click an item to add a subrequirement, keeping the following in mind:
+		-"The following are all true:" and "At least one of the following is true:" must have at least one subrequirement, and may have more. (Having just one doesn't really make sense, but it's legal.)
+		-The top-level requirement is an exception to the above. It may be empty, in which case the scene will always trigger.
+		-"The following is NOT true:" must have exactly one subrequirement.
+		-All other requirements are not allowed to have subrequirements.
+		-Every requirement which has fields, like "has this item:" and ".. this position:", must have all options filled.
+		-No two subrequirements of the same requirement may be of the same type or refer to the "other character". (You can have two of the same type if one refers to the other character)	
+		-Click "Validate" at the bottom of the screen to check for mistakes.
+		-When writing multiple alternative scenes, these will be evaluated top-down and the first scenes of which the requirements match will trigger, so order is important.
+		-Always make sure that a scene always triggers, typically by including a requirement-less scene as the last entry.
+	-In the File menu item, click "Display JSON" to get the properly-formatted JSON text, which you can copy-paste into your character file.
+
+31/07/16 - 2.1.0.2
+Ryplinn:
+	-Fixed a bug where the clock would be stuck after loading a game.
+	-Disabling images no longer also disables portraits.
+	-Fixed affection and attraction not loading correctly.
+Pimvgd:
+	-Fixed Use Aphrodisiac for succubi and slimes.
+	-Fixed some text issues.
+	-Improved handling of rank.
+	-Modified some skill messages to use characters' gender instead of assuming female.
+DNDW:
+	-Fix manual saves after match being loaded at start of match.
+	-Added option to always use female pronouns for opponents, regardless of anatomy. (In the Options screen.)
+	-Added "Futanari Time" custom start, made by MotoKuchoma.
+	(-Some unfinished work on Jewel's addiction.)
+
+28/07/16 - 2.1.0.1
+-Fixed a bug causing the player's inventory to disappear when modified by special rules. (e.g. no toys)
+
+27/07/16 - 2.1.0
+-Merged everything (relevant) up to Not Quite Mara Time from the base game, including the Ninjutsu and Temporal skillsets.
+-Expanded on The Silver Bard's Foreplay/Finisher system. Foreplay skills are listed in italics, Finishers in bold. Foreplay is more effective at low arousal/willpower, Finishers at high values.
+
+12/07/16 - 2.0.6
+-Enthrallers now prioritze tops and bottoms when ordering their thralls to remove clothing, and won't remove strapons.
+-It's no longer possible to use oral skills when riding in Reverse Cowgirl. (Characters with a vaginal tongue can still use Blow)
+-Cassie is more likely to use Nurse, which triggers her addiction
+-Reyka's addiction requires more contact with her mouth to trigger
+-Angel's addiction has a 25% of not triggering when it normally would
+-The rate at which the in-combat effects of addictions grow worse is a bit lower now
+-Running out of stamina gets worse at higher levels, 1 extra turn of Winded for every 10 levels, starting at 20
+-The ai will prefer not to use Spiral Thrust unless the user has very high mojo
+-Fixed a crash in FaceSit because it wrongly assumed NPCs would always have a pussy
+-Relabeled the difficulty options in hopes of making them more clear for new players.
+-The custom modifier framework which I built months ago now actually uses its JSON interface. Check data/customModifiers.json for examples and explanations on how to build your own modifiers. (Modifiers are things like underwear-only or no-violence matches.)
+
+26/06/16 - 2.0.5
+-Added Mara's addiction: Mind Control
+	-After Mara reaches level 20, you'd best make sure she can't look you in the eyes when you cum.
+	-When fighting Mara while controlled, you'll randomly fall into enthrallment. You can lower the odds by acting submissively or masturbating.
+	-When in withdrawal, you'll have a constant drain on your stamina.
+	-While fighting anyone but Mara, you'll have a chance to resist mental effects.
+-Added Blindfolds
+	-When worn, these severly hamper your ability to see what's going on. You won't see the names of moves your opponent uses, can't see their clothing or status, and some moves are completely invisible (like counters, drinking drafts). They also lower your evasion, obviously.
+	-On the flip side, they protect you from things like Charm and EyesOfTempation, and also from Mara's new trick.
+	-You can put these on yourself, put them on opponents, or get them put on you. You can also remove them from yourself and your opponent.
+	-Mara is liable to remove your blindfold if possible, for obvious reasons. The others not so much.
+	-Blindfolds are cheap and can be bought from the XXX Store.
+-Fixed Drowsy having a shorter duration with Personal Inertia rather than longer.
+-Fixed Sweaters being classified as bottoms.
+-All addiction-inspired combat effects now reliably grow worse every turn you're fighting the source of the addiction.
+-Added missing morning descriptions for Angel's, Reyka's and Kat's addictions.
+-Incorporated fixes by Ryplinn:
+	-Setting a level in a start configuration no longer affects money instead.
+	-Genitals are now properly assigned again.
+-Starting traits, if allowed, are actually added in advanced starts.
+
+16/06/16 - 2.0.4
+-Fixed bug where unlocking new competitors allowed the player to end up with a negative amount of money.
+-Merged in fixes to the start configuration mechanism by Ryplinn.
+-Some small fixes.
+
+28/05/16 - 2.0.3.1
+-Fixed trophies not being set correctly for custom starts.
+
+28/05/16 - 2.0.3
+-Added start configurations:
+	-These alter the starting conditions of your game. Pretty much anything can be altered, different characters with different traits, different bodyparts, different attributes, even different names.
+	-"Default" is the plain old start, with no changes.
+	-"Default Verbose" is pretty much the same as Default, except that it explicitly sets default options instead of allowing the game to infer them. This is mainly so you can see most options if you want to make a configuration yourself.
+	-"NewGame+" starts with all characters unlocked and with their post-level 10 classes and bodies. They also gain a boost to their attributes, but start at level 1. The player gets extra attribute points to compensate, but cannot pick any advanced attributes.
+	-"Angels and Demons" pits three Angels (Angel, Cassie, Mara) against three Demons (Reyka, Eve, Jewel), and puts the player in the middle. Attributes are similar to New Game+. Cassie, Mara, Eve and Jewel also get their own advanced features, while Angel and Reyka get a bonus to theirs. The player also get bonus points.
+	-"Inverted Genders" is just that: the player is a female, the others are male. They have their names changed, but that doesn't work everywhere. Lots of things will break, but not unplayably. It works fine, as long as you don't take it too seriously.
+	-There is a description of all available options in the "starts" folder, which is also where the configurations are stored.
+
+26/05/16 - 2.0.2
+
+-Added Kat's Breeder addiction. You get it by her biting you during sex, and can worsen it by fucking her (or being bitten again). It increases pleasure from fucking Kat, allows her to use Invitation without mojo, keeps you from pulling out at high levels, and allows the use and increases the damage of Wild Thrust. At high levels, it makes the player Feral, which reduces willpower loss but maintains half of your arousal on orgasm. In withdrawal, it causes a permanent Horny causing arousal over time.
+-Added Bite, which can only be used by Kat. It has no effects beside the addiction.
+-Relocated the withdrawal check so that the relevant message(s) are printed without being immediately removed again...
+-Witdrawal effects now refresh every turn, both in and out of combat. This shouldn't have any effect on existing content, just for the Horny mentioned above.
+-All (hopefully) of the game now compares characters by type instead of name. This may prevent some bugs in future plans.
+
+(This was changed in 2.0.0, but not mentioned: Frenzied characters can no longer use Engulf)
+
+08/05/16 - 1.9.6
+
+-Added a framework for long-lasting addictions. These are built up over time with specific actions and have severe negative consequences if they get too strong. They can be reduced by not indulging for a while, but that does cause withdrawal effects. All addictions are unlocked at level 20.
+-Incorporated Cassie's Magic Milk addiction by nergantre. You get addicted by drinking (or being forced to drink) her milk. It causes willpower loss when fighting Cassie, and when in withdrawal it limits total willpower.
+-Added Angel's Zeal. This is an addiction gained by cumming while fucking Angel. It 'encourages' you to take submissive positions while fighting her. In withdrawal, it limits mojo gain. (Crisis of Faith) If you worship Angel during the day, she gets a permanent Divine Charge the next night.
+-Added Reyka's Corruption. Gained by repeatedly coming into contact with her lips, or by cumming inside of her after penetrating her voluntarily (only if you are already corrupted to some degree, see below). It will transform random attribute points to Dark, and transform your body into a demon once it's done. In withdrawal it causes random negative effects. (Dark Chaos)
+-The game now tracks who initiated penetration, and whether or not it was voluntary. If the initiator was under some form of mind control, it wasn't voluntary. In the case of counters, the character who used the counter is the initiator, not the one who triggered it.
+-Dissolve now prioritizes tops and bottoms before dissolving shoes and the like. I'm not too certain about this one.
+-Fixed Leech Energy's ridiculously low accuracy. Must have been a typo. (7->80)
+-Added Pray. Only available to a player afflicted with Zeal, but not while fighting Angel. It boosts willpower.
+-Added Prostrate. Usable only while having Zeal and fighting Angel. Lay down in front of her. This reduces the strength of the addiction during the current fight, but increases long-term addiction.
+-Added Dark Kiss. Usable only while Corrupted. It reduces the target's willpower and temporarily reduces Corruption, but increases the long-term addiction.
+-Fixed a whole lot of bugs and text issues.
+
+==============================================================================
+
+20/04/16 - 1.9.5
+
+-Null values in saves do not cause crashes
+-Leech Seed:
+	-Now costs mojo
+	-Requires the pussy/ass to be naked
+-Strapon has a longer timeout (6->15 turns)
+-Struggling while fucking now correctly changes into a dominant position rather than standing
+-Cynical no longer prevents mojo gain, but lowers it by 25%
+-Seeded no longer prints messages when the player is not involved
+-A few uniteresting internal changes
+
+======================================== Old Changelog:
+
 The Silver Bard's changes:
 
 Some statuses can now stack, intensifying their effect and extending their duration
@@ -77,9 +218,7 @@ Fixed EnthrallingTrap not having a string representation for use in the button (
 Generalized the structure for match modifiers (like underwear only, hypersensitivity cream, etc.) so they are easier to add. They can be created in JSON, too, though not with full functionality yet.
 Completely remade the way NPCs handle enthralled opponents. It's now less powerful and more random.
 Fixed stripping checks causing a crash if the character is naked.
-<<<<<<< HEAD
 Made Undress and Masturbate much less likely to be picked by the AI
-=======
 (Probably) Fixed body modification skills causing changes in simulation. (Temporary changes were prevented, permanent ones weren't)
 Added a duration to fetishes.
 Finished Airi, who has been partially implemented for a long time. She's a slime, and will appear when you reach level 10.
@@ -117,4 +256,3 @@ FTC Match:
 -Hunters get two points for beating other hunters, but no points for beating the prey.
 -When a hunter turns in the Flag, the prey can collect a new one at their base.
 -When the prey gets a new Flag, they cannot be attacked for a short time.
->>>>>>> 9fe7224

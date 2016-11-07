@@ -6,12 +6,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 
-import nightgames.characters.BasePersonality.PreferredAttribute;
 import nightgames.characters.Character;
 import nightgames.characters.CharacterSex;
 import nightgames.characters.Emotion;
 import nightgames.characters.Growth;
 import nightgames.characters.Plan;
+import nightgames.characters.PreferredAttribute;
 import nightgames.characters.body.Body;
 import nightgames.combat.Combat;
 import nightgames.items.Item;
@@ -39,6 +39,7 @@ public class DataBackedNPCData implements NPCData {
     Body body;
     AiModifiers aiModifiers;
     Map<CommentSituation, String> comments;
+    boolean isStartCharacter;
 
     public DataBackedNPCData() {
         preferredAttributes = new ArrayList<>();
@@ -59,6 +60,7 @@ public class DataBackedNPCData implements NPCData {
         recruitment = new RecruitmentData();
         aiModifiers = new AiModifiers();
         comments = new HashMap<>();
+        isStartCharacter = false;
     }
 
     @Override
@@ -136,8 +138,7 @@ public class DataBackedNPCData implements NPCData {
     @Override
     public CharacterSex getSex() {
         try {
-            CharacterSex eSex = CharacterSex.valueOf(sex);
-            return eSex;
+            return CharacterSex.valueOf(sex);
         } catch (IllegalArgumentException | NullPointerException e) {
             return CharacterSex.asexual;
         }
@@ -181,5 +182,9 @@ public class DataBackedNPCData implements NPCData {
     @Override
     public Map<CommentSituation, String> getComments() {
         return comments;
+    }
+
+    public boolean isStartCharacter() {
+        return isStartCharacter;
     }
 }

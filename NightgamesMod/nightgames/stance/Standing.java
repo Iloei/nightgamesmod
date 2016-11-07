@@ -3,6 +3,7 @@ package nightgames.stance;
 import nightgames.characters.Character;
 import nightgames.combat.Combat;
 import nightgames.global.Global;
+import nightgames.skills.damage.DamageType;
 
 public class Standing extends MaledomSexStance {
     public Standing(Character top, Character bottom) {
@@ -12,9 +13,11 @@ public class Standing extends MaledomSexStance {
     @Override
     public String describe() {
         if (top.human()) {
-            return "You are holding " + bottom.name() + " in the air while buried deep in her pussy";
+            return "You are holding " + bottom.name() + " in the air while buried deep in her pussy.";
         } else {
-            return top.name() + " is holding you in her arms while pumping into your girl parts.";
+            return String.format("%s is holding %s in %s arms while pumping into %s girl parts.",
+                            top.subject(), bottom.nameDirectObject(), top.possessivePronoun(),
+                            bottom.possessivePronoun());
         }
     }
 
@@ -86,7 +89,7 @@ public class Standing extends MaledomSexStance {
     @Override
     public void decay(Combat c) {
         time++;
-        top.weaken(null, 2);
+        top.weaken(c, (int) bottom.modifyDamage(DamageType.stance, top, 2));
     }
 
     @Override
@@ -113,5 +116,10 @@ public class Standing extends MaledomSexStance {
                                         + "{self:pronoun} {self:action:have|has} coiled around {other:direct-object}.",
                         bottom, top));
         return new CoiledSex(bottom, top);
+    }
+    
+    @Override
+    public int dominance() {
+        return 3;
     }
 }

@@ -1,12 +1,11 @@
 package nightgames.status;
 
-import org.json.simple.JSONObject;
+import com.google.gson.JsonObject;
 
 import nightgames.characters.Attribute;
 import nightgames.characters.Character;
 import nightgames.characters.body.BodyPart;
 import nightgames.combat.Combat;
-import nightgames.global.JSONUtils;
 
 public class Rewired extends DurationStatus {
     public Rewired(Character affected, int duration) {
@@ -20,7 +19,8 @@ public class Rewired extends DurationStatus {
         if (affected.human()) {
             return "Your senses feel... wrong. It's like your sense of pleasure and pain are jumbled.";
         } else {
-            return affected.name() + " fidgets uncertainly at the alien sensation of her rewired nerves.";
+            return affected.name() + " fidgets uncertainly at the alien sensation of "+affected.possessivePronoun()
+            +" rewired nerves.";
         }
     }
 
@@ -95,17 +95,14 @@ public class Rewired extends DurationStatus {
         return new Rewired(newAffected, getDuration());
     }
 
-    @Override
-    @SuppressWarnings("unchecked")
-    public JSONObject saveToJSON() {
-        JSONObject obj = new JSONObject();
-        obj.put("type", getClass().getSimpleName());
-        obj.put("duration", getDuration());
+    @Override  public JsonObject saveToJson() {
+        JsonObject obj = new JsonObject();
+        obj.addProperty("type", getClass().getSimpleName());
+        obj.addProperty("duration", getDuration());
         return obj;
     }
 
-    @Override
-    public Status loadFromJSON(JSONObject obj) {
-        return new Rewired(null, JSONUtils.readInteger(obj, "duration"));
+    @Override public Status loadFromJson(JsonObject obj) {
+        return new Rewired(null, obj.get("duration").getAsInt());
     }
 }

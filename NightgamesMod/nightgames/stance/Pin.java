@@ -14,7 +14,8 @@ public class Pin extends AbstractFacingStance {
         if (top.human()) {
             return "You're sitting on " + bottom.name() + ", holding her arms in place.";
         } else {
-            return top.name() + " is pinning you down, leaving you helpless.";
+            return String.format("%s is pinning %s down, leaving %s helpless.",
+                            top.subject(), bottom.nameDirectObject(), bottom.directObject());
         }
     }
 
@@ -91,5 +92,15 @@ public class Pin extends AbstractFacingStance {
     @Override
     public double pheromoneMod(Character self) {
         return 1.5;
+    }
+    
+    @Override
+    public int dominance() {
+        return 4;
+    }
+    
+    @Override
+    public int distance() {
+        return 1;
     }
 }

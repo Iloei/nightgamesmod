@@ -4,12 +4,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 
-import nightgames.characters.BasePersonality.PreferredAttribute;
 import nightgames.characters.Character;
 import nightgames.characters.CharacterSex;
 import nightgames.characters.Emotion;
 import nightgames.characters.Growth;
 import nightgames.characters.Plan;
+import nightgames.characters.PreferredAttribute;
 import nightgames.characters.body.Body;
 import nightgames.combat.Combat;
 import nightgames.items.Item;
@@ -56,4 +56,6 @@ public interface NPCData {
     AiModifiers getAiModifiers();
 
     Map<CommentSituation, String> getComments();
+
+    boolean isStartCharacter();
 }

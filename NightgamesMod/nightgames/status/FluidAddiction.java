@@ -4,7 +4,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 
-import org.json.simple.JSONObject;
+import com.google.gson.JsonObject;
 
 import nightgames.characters.Attribute;
 import nightgames.characters.Character;
@@ -12,7 +12,6 @@ import nightgames.characters.Emotion;
 import nightgames.characters.Trait;
 import nightgames.characters.body.BodyPart;
 import nightgames.combat.Combat;
-import nightgames.global.JSONUtils;
 import nightgames.skills.Blowjob;
 import nightgames.skills.Cunnilingus;
 import nightgames.skills.Kiss;
@@ -21,21 +20,21 @@ import nightgames.skills.Skill;
 import nightgames.skills.Suckle;
 
 public class FluidAddiction extends DurationStatus {
-    protected int stacks;
+    protected double magnitude;
     private int activated;
     Character target;
 
-    public FluidAddiction(Character affected, Character target, int duration) {
+    public FluidAddiction(Character affected, Character target, double magnitude, int duration) {
         super("Addicted", affected, duration);
         this.target = target;
-        stacks = 1;
+        this.magnitude = magnitude;
         activated = 0;
         flag(Stsflag.fluidaddiction);
         flag(Stsflag.purgable);
     }
 
     public FluidAddiction(Character affected, Character target) {
-        this(affected, target, 4);
+        this(affected, target, 1, 4);
     }
 
     @Override
@@ -44,14 +43,14 @@ public class FluidAddiction extends DurationStatus {
             if (affected.human()) {
                 return "You feel a desperate need to taste more of " + target.nameOrPossessivePronoun() + " fluids.";
             } else {
-                return affected.name() + " is eyeing you like a junkie.";
+                return affected.name() + " is eyeing "+c.getOther(affected).nameDirectObject()+" like a junkie.";
             }
         } else {
             if (affected.human()) {
                 return "You're not sure why " + target.nameOrPossessivePronoun()
                                 + " fluids is so tantalizing, but you know you want some more";
             } else {
-                return affected.name() + " seems to want more of your fluids.";
+                return affected.name() + " seems to want more of "+c.getOther(affected).nameOrPossessivePronoun()+" fluids.";
             }
         }
     }
@@ -62,7 +61,7 @@ public class FluidAddiction extends DurationStatus {
     }
 
     public boolean isActive() {
-        return stacks > 2;
+        return magnitude > 2;
     }
 
     @Override
@@ -72,7 +71,7 @@ public class FluidAddiction extends DurationStatus {
 
     @Override
     public float fitnessModifier() {
-        return -2.0f;
+        return -(float)magnitude;
     }
 
     @Override
@@ -98,7 +97,7 @@ public class FluidAddiction extends DurationStatus {
         if (!isActive()) {
             FluidAddiction other = (FluidAddiction) s;
             setDuration(Math.max(other.getDuration(), getDuration()));
-            stacks += other.stacks;
+            magnitude += other.magnitude;
             if (isActive() && activated == 0) {
                 activated = 1;
             }
@@ -109,9 +108,9 @@ public class FluidAddiction extends DurationStatus {
     public String toString() {
         if (isActive()) {
             return "Addicted";
-        } else if (stacks == 1) {
+        } else if (magnitude >= .99) {
             return "Piqued";
-        } else if (stacks == 2) {
+        } else if (magnitude >= 1.99) {
             return "Hooked";
         }
         return "Addicted?";
@@ -191,7 +190,7 @@ public class FluidAddiction extends DurationStatus {
 
     @Override
     public Status instance(Character newAffected, Character newOther) {
-        return new FluidAddiction(newAffected, newOther, getDuration());
+        return new FluidAddiction(newAffected, newOther, magnitude, getDuration());
     }
 
     public boolean activated() {
@@ -203,17 +202,15 @@ public class FluidAddiction extends DurationStatus {
         }
     }
 
-    @Override
-    @SuppressWarnings("unchecked")
-    public JSONObject saveToJSON() {
-        JSONObject obj = new JSONObject();
-        obj.put("type", getClass().getSimpleName());
-        obj.put("duration", getDuration());
+    @Override  public JsonObject saveToJson() {
+        JsonObject obj = new JsonObject();
+        obj.addProperty("type", getClass().getSimpleName());
+        obj.addProperty("magnitude", magnitude);
+        obj.addProperty("duration", getDuration());
         return obj;
     }
 
-    @Override
-    public Status loadFromJSON(JSONObject obj) {
-        return new FluidAddiction(null, null, JSONUtils.readInteger(obj, "duration"));
+    @Override public Status loadFromJson(JsonObject obj) {
+        return new FluidAddiction(null, null, obj.get("magnitude").getAsInt(), obj.get("duration").getAsInt());
     }
 }

@@ -10,6 +10,8 @@ import nightgames.characters.Trait;
 import nightgames.combat.Combat;
 import nightgames.combat.Result;
 import nightgames.global.Global;
+import nightgames.nskills.tags.SkillTag;
+import nightgames.skills.damage.Staleness;
 import nightgames.status.FiredUp;
 import nightgames.status.Status;
 import nightgames.status.Stsflag;
@@ -20,10 +22,10 @@ public abstract class Skill {
      */
     private String name;
     private Character self;
-    protected String image;
-    protected String artist;
     private int cooldown;
+    private Set<SkillTag> tags;
     public String choice;
+    private Staleness staleness;
 
     public Skill(String name, Character self) {
         this(name, self, 0);
@@ -32,10 +34,10 @@ public abstract class Skill {
     public Skill(String name, Character self, int cooldown) {
         this.name = name;
         setSelf(self);
-        image = null;
-        artist = null;
         this.cooldown = cooldown;
         choice = "";
+        tags = new HashSet<>();
+        staleness = Staleness.build().withDecay(.1).withFloor(.5).withRecovery(.05);
     }
 
     public final boolean requirements(Combat c, Character target) {
@@ -44,7 +46,7 @@ public abstract class Skill {
 
     public abstract boolean requirements(Combat c, Character user, Character target);
 
-    public static void filterAllowedSkills(Combat c, Set<Skill> skills, Character user, Character target) {
+    public static void filterAllowedSkills(Combat c, Collection<Skill> skills, Character user, Character target) {
         boolean filtered = false;
         Set<Skill> stanceSkills = new HashSet<Skill>(c.getStance().availSkills(user));
 
@@ -78,11 +80,11 @@ public abstract class Skill {
     }
 
     public static boolean skillIsUsable(Combat c, Skill s, Character target) {
-        boolean charmRestricted = (s.getSelf().is(Stsflag.charmed) || s.getSelf().is(Stsflag.lovestruck))
+        boolean charmRestricted = (s.getSelf().is(Stsflag.charmed))
                         && s.type(c) != Tactics.fucking && s.type(c) != Tactics.pleasure && s.type(c) != Tactics.misc;
         boolean allureRestricted =
                         target.is(Stsflag.alluring) && (s.type(c) == Tactics.damage || s.type(c) == Tactics.debuff);
-        boolean modifierRestricted = !Global.getMatch().condition.getSkillModifier().allowedSkills(c).contains(s);
+        boolean modifierRestricted = !Global.getMatch().condition.getSkillModifier().allowedSkill(c,s);
         boolean usable = s.usable(c, target) && s.getSelf().canSpend(s.getMojoCost(c)) && !charmRestricted
                         && !allureRestricted && !modifierRestricted;
         return usable;
@@ -122,6 +124,10 @@ public abstract class Skill {
         return 90;
     }
 
+    public Staleness getStaleness() {
+        return this.staleness;
+    }
+
     public int speed() {
         return 5;
     }
@@ -149,20 +155,13 @@ public abstract class Skill {
 
     @Override
     public boolean equals(Object other) {
+        if (other == null) return false;
         return toString().equals(other.toString());
     }
 
     @Override
     public int hashCode() {
         return ("Skill:" + toString()).hashCode();
-    }
-
-    public String getImage() {
-        return image;
-    }
-
-    public String getArtist(String image) {
-        return artist;
     }
 
     public String getName(Combat c) {
@@ -198,15 +197,16 @@ public abstract class Skill {
         if (success) {
             skill.user().buildMojo(c, generated);
         }
-        c.getCombatantData(skill.user()).setLastUsedSkillName(skill.getName());
+        if (c.getCombatantData(skill.getSelf()) != null) {
+            c.getCombatantData(skill.getSelf()).decreaseMoveModifier(c, skill);
+        }
+        if (c.getCombatantData(skill.user()) != null) { 
+            c.getCombatantData(skill.user()).setLastUsedSkillName(skill.getName());
+        }
     }
 
     public int getCooldown() {
         return cooldown;
-    }
-
-    public void setCooldown(int cooldown) {
-        this.cooldown = cooldown;
     }
 
     public Collection<String> subChoices() {
@@ -215,5 +215,40 @@ public abstract class Skill {
 
     public Character getSelf() {
         return self;
+    }
+    
+    protected void printBlinded(Combat c) {
+        c.write("<i>You're sure something is happening, but you can't figure out what it is.</i>");
+    }
+    
+    public Stage getStage() {
+        return Stage.REGULAR;
+    }
+    
+    public final double multiplierForStage(Character target) {
+        return getStage().multiplierFor(target);
+    }
+    
+    protected void writeOutput(Combat c, Result result, Character target) {
+        writeOutput(c, 0, result, target);
+    }
+    
+    protected void writeOutput(Combat c, int mag, Result result, Character target) {
+        if (getSelf().human()) {
+            c.write(getSelf(), deal(c, mag, result, target));
+        } else if (c.shouldPrintReceive(target)) {
+            c.write(getSelf(), receive(c, mag, result, target));
+        }
+    }
+
+    protected void addTag(SkillTag tag) {
+        tags.add(tag);
+    }
+
+    protected void removeTag(SkillTag tag) {
+        tags.remove(tag);
+    }
+    public Set<SkillTag> getTags() {
+        return Collections.unmodifiableSet(tags);
     }
 }

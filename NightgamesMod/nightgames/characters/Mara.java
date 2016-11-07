@@ -2,15 +2,21 @@ package nightgames.characters;
 
 import java.util.Optional;
 
-import nightgames.characters.body.BreastsPart;
 import nightgames.characters.body.CockMod;
 import nightgames.characters.body.FacePart;
+import nightgames.characters.body.GenericBodyPart;
 import nightgames.characters.body.PussyPart;
 import nightgames.combat.Combat;
 import nightgames.combat.Result;
 import nightgames.global.Global;
 import nightgames.items.Item;
 import nightgames.items.clothing.Clothing;
+import nightgames.skills.strategy.WindUpStrategy;
+import nightgames.skills.strategy.FootjobStrategy;
+import nightgames.skills.strategy.NurseStrategy;
+import nightgames.skills.strategy.StraponStrategy;
+import nightgames.skills.strategy.UseToyStrategy;
+import nightgames.start.NpcConfiguration;
 import nightgames.status.Hypersensitive;
 import nightgames.status.Oiled;
 
@@ -21,7 +27,15 @@ public class Mara extends BasePersonality {
     private static final long serialVersionUID = -3812726803607189573L;
 
     public Mara() {
-        super("Mara", 1);
+        this(Optional.empty(), Optional.empty());
+    }
+
+    public Mara(Optional<NpcConfiguration> charConfig, Optional<NpcConfiguration> commonConfig) {
+        super("Mara", 1, charConfig, commonConfig);
+    }
+
+    protected void applyBasicStats() {
+        character.isStartCharacter = true;
         preferredCockMod = CockMod.bionic;
         character.outfitPlan.add(Clothing.getByID("bra"));
         character.outfitPlan.add(Clothing.getByID("Tshirt"));
@@ -32,6 +46,14 @@ public class Mara extends BasePersonality {
         character.change();
         character.mod(Attribute.Cunning, 2);
         character.mod(Attribute.Perception, 2);
+        character.getStamina().setMax(80 + character.getLevel() * getGrowth().stamina);
+        character.getArousal().setMax(80 + character.getLevel() * getGrowth().arousal);
+        
+        character.addPersonalStrategy(new FootjobStrategy());
+        character.addPersonalStrategy(new UseToyStrategy());
+        character.addPersonalStrategy(new StraponStrategy());
+        character.addPersonalStrategy(new WindUpStrategy());
+
         Global.gainSkills(character);
         character.add(Trait.petite);
         character.add(Trait.dexterous);
@@ -39,20 +61,20 @@ public class Mara extends BasePersonality {
         character.setTrophy(Item.MaraTrophy);
         character.plan = Plan.hunting;
         character.mood = Emotion.confident;
-        character.body.add(BreastsPart.b);
-        character.body.add(PussyPart.normal);
         character.body.add(new FacePart(.1, 1.1));
-        character.body.finishBody(CharacterSex.female);
+        character.initialGender = CharacterSex.female;
     }
 
     @Override
     public void setGrowth() {
         growth.stamina = 2;
-        growth.arousal = 2;
+        growth.arousal = 4;
         growth.mojo = 3;
         growth.bonusStamina = 1;
         growth.bonusArousal = 2;
         growth.bonusMojo = 2;
+        preferredAttributes.add(c -> c.getRank() >= 4 && c.get(Attribute.Temporal) < 20 
+                        ? Optional.of(Attribute.Temporal) : Optional.empty());
         preferredAttributes.add(c -> c.get(Attribute.Science) < 15 ? Optional.of(Attribute.Science) : Optional.empty());
         preferredAttributes.add(c -> c.get(Attribute.Science) >= 15 && c.get(Attribute.Fetish) < 50
                         ? Optional.of(Attribute.Fetish) : Optional.empty());
@@ -62,27 +84,47 @@ public class Mara extends BasePersonality {
         growth.addTrait(3, Trait.cautious);
         growth.addTrait(6, Trait.freeSpirit);
         growth.addTrait(9, Trait.limbTraining1);
-        growth.addTrait(12, Trait.strongwilled);
+        growth.addTrait(12, Trait.dickhandler);
         growth.addTrait(15, Trait.pussyTraining1);
-        growth.addTrait(18, Trait.tight);
+        growth.addTrait(18, Trait.pussyhandler);
+        growth.addTrait(20, Trait.mindcontroller);
         growth.addTrait(21, Trait.tongueTraining1);
         growth.addTrait(24, Trait.limbTraining2);
-        growth.addTrait(27, Trait.skeptical);
+        growth.addTrait(27, Trait.tight);
         growth.addTrait(30, Trait.limbTraining3);
-        growth.addTrait(33, Trait.pussyTraining2);
-        growth.addTrait(36, Trait.tongueTraining2);
+        growth.addTrait(33, Trait.defthands);
+        growth.addTrait(36, Trait.toymaster);
         growth.addTrait(39, Trait.calm);
-        growth.addTrait(42, Trait.pussyTraining3);
-        growth.addTrait(45, Trait.holecontrol);
-        growth.addTrait(48, Trait.desensitized2);
+        growth.addTrait(42, Trait.nimbletoes);
+        growth.addTrait(45, Trait.dickhandler);
+        growth.addTrait(48, Trait.skeptical);
+        growth.addTrait(51, Trait.desensitized2);
     }
 
     @Override
+    protected void onLevelUp() {
+        if (character.rank >= 4) {
+            
+        }
+    }
+    
+    @Override
     public void rest(int time) {
-        if (character.rank == 1) {
-            if (!character.has(Trait.madscientist) && character.money >= 1000) {
-                advance();
-            }
+        if (character.rank == 1 && !character.has(Trait.madscientist)) {
+            character.add(Trait.madscientist);
+            character.body.addReplace(PussyPart.cybernetic, 1);
+            character.unequipAllClothing();
+            character.outfitPlan.add(Clothing.getByID("bra"));
+            character.outfitPlan.add(Clothing.getByID("shirt"));
+            character.outfitPlan.add(Clothing.getByID("labcoat"));
+            character.outfitPlan.add(Clothing.getByID("underwear"));
+            character.outfitPlan.add(Clothing.getByID("pants"));
+            character.outfitPlan.add(Clothing.getByID("pantyhose"));
+            character.outfitPlan.add(Clothing.getByID("boots"));
+            character.mod(Attribute.Science, 1);
+        }
+        if (character.rank == 2 && !character.has(Trait.madscientist)) {
+            character.body.add(new GenericBodyPart("mechanical tentacles", "Four large mechanically feelers are attached to {self:possessive} back.", 1, 1.0, 0.0, true, "mechtentacles", ""));
         }
         super.rest(time);
         if (!(character.has(Item.Onahole) || character.has(Item.Onahole2)) && character.money >= 300) {
@@ -125,23 +167,13 @@ public class Mara extends BasePersonality {
         }
         Decider.visit(character);
         int r;
+
         for (int i = 0; i < time; i++) {
-            r = Global.random(4);
+            r = Global.random(8);
             if (r == 1) {
-                if (character.has(Trait.fitnessNut)) {
-                    character.getStamina().gain(1);
-                }
-                character.getStamina().gain(1);
-            } else if (r == 3) {
-                if (character.has(Trait.expertGoogler)) {
-                    character.getArousal().gain(3);
-                }
-                character.getArousal().gain(4);
-            } else if (r == 2) {
-                if (character.has(Trait.mojoMaster)) {
-                    character.getMojo().gain(1);
-                }
-                character.getMojo().gain(1);
+                Global.getDay().visit("Exercise", this.character, 0);
+            } else if (r == 0) {
+                Global.getDay().visit("Browse Porn Sites", this.character, 0);
             }
         }
     }
@@ -174,9 +206,9 @@ public class Mara extends BasePersonality {
 
     @Override
     public String victory(Combat c, Result flag) {
-        Character target= c.getOther(character);
+        Character target = c.getOther(character);
         character.arousal.empty();
-        if (flag == Result.anal) {
+        if (c.getStance().anallyPenetrated(target)) {
             return "The sensations coming from your prostate are too much as your arms give out below you. Mara doesn't let up either, grinding the head of the strap on over your "
                             + "prostate. <i>\"I've read that the prostate is the male equivalent of a g-spot,\"</i> she pants as she continues her assault on your ass. <i>\"I'd like to see if I can "
                             + "make you come without stimulating your penis.\"</i> she continues. You don't really listen as your brain is about to short circuit and your dick is about to give "
@@ -189,34 +221,54 @@ public class Mara extends BasePersonality {
         if (character.has(Trait.madscientist) && character.has(Item.Lubricant)) {
             target.add(c, new Oiled(target));
             return "You've fallen completely into Mara's hands now. Her nimble fingers dance over your dick and balls, playing you like an instrument. You grit your teeth and "
-                            + "try to endure her touch until your can finger her to orgasm. It's a lost cause though, groan as you inevitably feel your pleasure building to a peak. Just before "
+                            + "try to endure her touch until you can finger her to orgasm. It's a lost cause though, and you groan as you inevitably feel your pleasure building to a peak. Just before "
                             + "you hit the point of no return, her wonderful fingers release you. Mara grins impishly as your dick twitches in frustration at being left on edge. As soon as you've "
                             + "let your guard down, she kisses you forcefully and pumps your cock rapidly. Your orgasm rocks you as she milks as much of your cum as she can get.<p>You slump to the "
                             + "floor, spent, but Mara isn't finished with you. She pulls out a bottle of lubricant and starts to grease you up. She takes her time with it, teasing and tickling you "
                             + "as she goes, stopping from time to time to place light kisses. Between her enticing behavior and her naked body pressed against you, your erection recovers in record "
                             + "time.<p>Mara makes herself comfortable sitting on your lap and slides your lubed up dick between her thighs. As she leans against your chest, you can feel her hot slit "
                             + "pressing against your member. Her finger teases the head of your penis, which is poking out of her lap. <i>\"It's a good thing you're such a horny boy. If you couldn't get it "
-                            + "up again, I would have to settle for grinding on your leg.\"</i> As she says thing, she starts to rub her clit along the length of your penis. She keeps her legs clamped "
+                            + "up again, I would have to settle for grinding on your leg.\"</i> As she says this, she starts to rub her clit along the length of your penis. She keeps her legs clamped "
                             + "tightly together so that her movements stimulate your entire shaft. You contribute by licking and sucking the side of her neck to draw out soft moans of pleasure. You "
                             + "support your upper body with your left arm, which leaves your right hand free to play with Mara's small breasts and nipples. Her grinding becomes more needy as she "
                             + "quickly approaches her climax and you can feel that your ejaculation is not far off. You recently come once however, and you're still not ready to cum when Mara starts "
-                            + "trembling and gasping in orgasm. You kiss her cheek and embrace her with your free arm until you feel she slumps limply against you.<p>Mara turns her head to meet your "
+                            + "trembling and gasping in orgasm. You kiss her cheek and embrace her with your free arm until you feel her slump limply against you.<p>Mara turns her head to meet your "
                             + "eyes and smiles gently. <i>\"Sorry, I came first. But you came alone earlier, so maybe we're even.\"</i> You groan softly as her legs squeeze your painfully hard dick. Her "
                             + "smile turns a bit more playful. <i>\"Are you worried I'm going to leave you with blue balls? I wouldn't do something that cruel.\"</i> She bats her eyes at you cutely and "
                             + "wets her lips with her tongue. <i>\"Kiss me?\"</i> You press your lips against hers and she immediately starts rubbing your lubricated glans with her palm. Your hips buck "
                             + "involuntarily, but she manages to maintain both the kiss and her grip on your cock. The intense stimulation blows away your endurance and your head goes blank as you "
                             + "cover her hands with your seed. Mara breaks the kiss and leaves you completely exhausted.";
         }
-        if (flag == Result.intercourse) {
-            return "Mara's pussy is so tight and wet. She skillfully rides your dick, overwhelming you with pleasure. <i>\"Are you going to cum before me?\"</i> She's panting with pleasure, "
-                            + "but still sounds confident. <i>\"Go ahead and fill me up. I don't mind.\"</i> Her permission is irrelevant. She's making you cum and there's nothing you can do about it. "
-                            + "You throw your head back and moan as you shoot your load into her tight womb.<p>Mara slides off your cock as your seed slowly leaks out of her. <i>\"Was I too good "
-                            + "for you to hold back? You quite a mess down here.\"</i> She stirs her entrance with her finger, making a wet sound. She still looks pretty horny and you recall that "
-                            + "she hasn't climaxed yet. She smiles and gives you a quick kiss. <i>\"Don't worry, I'll give myself a hand.\"</i> She inserts a second finger, using your ejaculate as a "
-                            + "lubricant. <i>\"Playing with semen would probably be a little gross to you, right? It's actually turning me on.\"</i> She lets out a quiet moan and gives you a needy "
-                            + "look. <i>\"Just don't leave, ok? I'd feel lonely masturbating on my own.\"</i> You hug Mara's petite body, feeling her tremble while she continues to play with herself. "
-                            + "You kiss her neck and stroke her body, which seems to heighten her pleasure. You judge she is on the verge of orgasm and kiss her passionately, while playing with "
-                            + "her nipples. She moans against your mouth and shudders in your arms as she climaxes.";
+        if (c.getStance().vaginallyPenetrated(character)) {
+            if(character.has(Item.ShockGlove)&&Global.random(2)==0){
+                return "You've got Mara just where you want her. Your arms are wrapped around her, holding her in place as you thrust your cock into her tight pussy over and over. Her moans are getting louder and louder, and you can feel her breath "
+                        + "quickening. You're getting close to cumming, but she's definitely closer. She returns your embrace, squeezing her body against yours, stroking your back with her hands. Her hands creep down to grasp your buttocks. "
+                        + "All of a sudden, she grins deviously, and she whispers...<p>"
+                        + "<i>\"Time for an experiment. Surprise!\"</i><br>"
+                        + "Suddenly, you feel a poking sensation in your ass. You feel the pressure of her fingers touching your prostate. Wait... is that the hand that she's wearing her shock glove on...?<p>"
+                        + "<b>BZZT!</b> A sharp jolt of pain tears through you as Mara forces electricity through her shock glove and into your ass. You thrash around desperately, but somehow the lithe girl is "
+                        + "able to keep her finger pressed against your prostate. You feel an intense pressure welling in your abdomen.<p>"
+                        + "Your orgasm hits you like a brick wall. The pain in your rear gives way to pleasure as the pressure in your abdomen releases. Your cock twitches over and over, and you can feel your seed filling up Mara's insides.<p>"
+                        + "When your orgasm finally subsides, Mara stands. Thick globs of white cum drip out of her. <i>\"Wow, you came a LOT!\"</i> she remarks happily. <i>\"Just like my research indicated.\"</i> She reaches for her soaked flower. "
+                        + "<i>\"Now, I can't go into my next fight this horny. You just hold that sexy, defeated pose. I'll handle myself.\"</i> Exhausted, you can do little more than lie there as Mara masturbates over you.<p>"
+                        + "After a few moments of pleasuring herself, Mara suddenly has a revelation. She spreads her pussy lips open and brings her dangerous, gloved hand near her exposed clit. She takes a deep breathe to bolster "
+                        + "her courage and giggles nervously. <i>\"This is probably either the best or worst idea I've even had. It looked like it felt great on your prostate... What's good for the goose, right..?\"</i> Before you can respond, "
+                        + "she touches an electrified finger to her sensitive love bud. Her whole body goes rigid and she lets out a scream of... probably pleasure?... as she shudders in orgasm.<p>"
+                        + "Finally, it's over. The reckless minx collapses next to you, panting. She rolls over and rests her head on your shoulder, then says, <i>\"That felt scary good, but I bet I don't need to tell you that... "
+                        + "I'm just worried I might get addicted to that kind of stimulation.\"</i> "
+                        + "She pecks your lips with a light kiss, then stands. <i>\"Come visit me every once in a while, okay? I'm working on some new tools that need... testing.\"</i>";
+            }else{
+                return "Mara's pussy is so tight and wet. She skillfully rides your dick, overwhelming you with pleasure. <i>\"Are you going to cum before me?\"</i> She's panting with pleasure, "+
+                    "but still sounds confident. <i>\"Go ahead and fill me up. I don't mind.\"</i> Her permission is irrelevant. She's making you cum and there's nothing you can do about it. "+
+                    "You throw your head back and moan as you shoot your load into her tight womb.<p>"
+                    + "Mara slides off your cock as your seed slowly leaks out of her. <i>\"Was I too good "+
+                    "for you to hold back? You made quite a mess down here.\"</i> She stirs her entrance with her finger, making a wet sound. She still looks pretty horny and you recall that "+
+                    "she hasn't climaxed yet. She smiles and gives you a quick kiss. <i>\"Don't worry, I'll give myself a hand.\"</i> She inserts a second finger, using your ejaculate as a "+
+                    "lubricant. <i>\"Playing with semen would probably be a little gross to you, right? It's actually turning me on.\"</i> She lets out a quiet moan and gives you a needy "+
+                    "look. <i>\"Just don't leave, ok? I'd feel lonely masturbating on my own.\"</i> You hug Mara's petite body, feeling her tremble while she continues to play with herself. "+
+                    "You kiss her neck and stroke her body, which seems to heighten her pleasure. You judge she is on the verge of orgasm and kiss her passionately, while playing with "+
+                    "her nipples. She moans against your mouth and shudders in your arms as she climaxes.";
+            }
         } else {
             target.arousal.set(target.arousal.max() * 2 / 3);
             return "You're completely at Mara's mercy, but she refuses to finish you off. She teases and caresses you, keeping you too on-edge to fight back, but avoids your "
@@ -231,7 +283,7 @@ public class Mara extends BasePersonality {
 
     @Override
     public String defeat(Combat c, Result flag) {
-        Character other= c.getOther(character);
+        Character other = c.getOther(character);
         if (character.has(Trait.madscientist) && character.has(Item.SPotion)) {
             character.add(c, new Hypersensitive(character));
             return "Mara begins to panic as she realizes she's on the verge of defeat. She grabs a small bottle of liquid from pouch on her belt, but it slips from her fingers "
@@ -252,7 +304,7 @@ public class Mara extends BasePersonality {
                             + "she's cumming. You lean in and kiss her gently as she catches her breath.<p>After you've both recovered enough to get back to your feet, Mara punches you weakly "
                             + "in the chest. <i>\"You jerk! Do you have any idea how long this stuff lasts? How am I suppose to win my next fight when I'm this sensitive?\"</i> She pulls your head down "
                             + "to her height and kisses you passionately before storming off.";
-        } else if (flag == Result.intercourse) {
+        } else if (c.getStance().vaginallyPenetrated(character)) {
             return "You bury yourself deep into Mara's tight pussy as she screams in pleasure. Her hot folds shudder and squeeze your cock, confirming she's reached her climax. "
                             + "The sensation is amazing, but you're not in danger of cumming with her. You gently stroke her head while spasms of pleasure continue to run through her small body. "
                             + "It occurs to you -not for the first time- that she's really cute, even when she's not trying to be.<p>As Mara catches her breath, you see realization slowly dawn "
@@ -268,35 +320,40 @@ public class Mara extends BasePersonality {
                             + "<i>\"If you really can't endure any more, I'm sure I can find a few ways to get you off, but think about how much happier we'll both be if you wait until you can cum "
                             + "inside.\"</i> <p>She's right about everything except the waiting. You kiss her fiercely, which catches her off guard long enough for you to easily thrust into her soaked "
                             + "entrance. She coos softly against your lips. She's clearly not in any discomfort from the sudden penetration. Right now you're too horny to be annoyed at her deception. "
-                            + "Her pussy is tight, wet, and feels heavenly. You pound your hips against hers for you mutual pleasure. Mara lets out breathy moans in time to your thrusts and when "
+                            + "Her pussy is tight, wet, and feels heavenly. You pound your hips against hers for your mutual pleasure. Mara lets out breathy moans in time to your thrusts and when "
                             + "you finally reach your sweet release, she tenses in orgasm under you.<p>She softly strokes your cheek as you both relish the afterglow. <i>\"You were just like a wild "
                             + "animal there,\"</i> She whispers with a grin. <i>\"You never would have been that intense if I hadn't made you wait.\"</i>";
-        } if (other.hasDick()) {
-        return "You've managed to reduce the ever arrogant and composed Mara to a puddle of whimpering pleasure. You caress and finger her to a shuddering climax. You don't "
-                        + "let up, prolonging her orgasm as long as possible. <i>\"Wait! wait! I already came! I'm really sensitive right now!\"</i> You continue toying with her twitching pussy "
-                        + "while she moans and pleads for mercy, but you are enjoying this rare opportunity to have the scheming minx at your mercy. Soon she arches her back, hitting her "
-                        + "second peak, and you finally let her catch her breath.<p>After Mara recovers enough to talk, she tells you to lie back and she goes to work, "
-                        + (other.hasDick() ?(" pleasuring your straining erection. You've given her two orgasms with no relief yourself, so it only takes a bit of stroking and sucking to bring you to the brink. Just as "
-                                        + "you feel your ejaculation building, she grips your shaft tightly enough to deny your release. She gives you her most impish smile as you look at her questioningly. "
-                                        + "<i>\"I never said I was going to get you off, but feel free to continue on your own.\"</i> She lets go of you and sits back in front of you smugly. <i>\"Just a bit of petty "
-                                        + "revenge for taking advantage of me.\"</i><p>It seems unfair that she's the one setting the terms when you won the fight, but she's not actually obliged to do "
-                                        + "anything for you. You can't just leave in your current state. If someone else caught you this frustrated and aroused, you wouldn't stand a chance. "
-                                        + "You grudgingly take matters into your own hands and begin masturbating while Mara smiles in amusement. Soon you're past your limit and you ejaculate "
-                                        + "onto her face and breasts. She giggles and licks the cum from her lips as you claim her clothes as a trophy and walk away.")
-                        : (" brushing near your throbbing clit. You've given her two orgasms with no relief yourself, so it only takes a bit of teasing to bring you to the brink. Just as "
-                                        + "you feel your orgasm building, she eases away, denying you your release. She gives you her most impish smile as you look at her questioningly. "
-                                        + "<i>\"I never said I was going to get you off, but feel free to continue on your own.\"</i> She lets go of you and sits back in front of you smugly. <i>\"Just a bit of petty "
-                                        + "revenge for taking advantage of me.\"</i><p>It seems unfair that she's the one setting the terms when you won the fight, but she's not actually obliged to do "
-                                        + "anything for you. But you can't just leave in your current state. If someone else caught you this frustrated and aroused, you wouldn't stand a chance. "
-                                        + "You grudgingly take matters into your own hands and bury your hand in your pussy while Mara smiles in amusement. Soon you're past your limit and you shake "
-                                        + "with pleasure. She giggles as you claim her clothes as a trophy and walk away."));
+        } else {
+            String message = "You've managed to reduce the ever arrogant and composed Mara to a puddle of whimpering pleasure. You caress and finger her to a shuddering climax. You don't "
+                            + "let up, prolonging her orgasm as long as possible. <i>\"Wait! wait! I already came! I'm really sensitive right now!\"</i> You continue toying with her twitching pussy "
+                            + "while she moans and pleads for mercy, but you are enjoying this rare opportunity to have the scheming minx at your mercy. Soon she arches her back, hitting her "
+                            + "second peak, and you finally let her catch her breath.<p>After Mara recovers enough to talk, she tells you to lie back and she goes to work";
+            if (other.hasDick()) {
+                message += " pleasuring your straining erection. You've given her two orgasms with no relief yourself, so it only takes a bit of stroking and sucking to bring you to the brink. Just as "
+                                + "you feel your ejaculation building, she grips your shaft tightly enough to deny your release. She gives you her most impish smile as you look at her questioningly. "
+                                + "<i>\"I never said I was going to get you off, but feel free to continue on your own.\"</i> She lets go of you and sits back in front of you smugly. <i>\"Just a bit of petty "
+                                + "revenge for taking advantage of me.\"</i><p>It seems unfair that she's the one setting the terms when you won the fight, but she's not actually obliged to do "
+                                + "anything for you. You can't just leave in your current state. If someone else caught you this frustrated and aroused, you wouldn't stand a chance. "
+                                + "You grudgingly take matters into your own hands and begin masturbating while Mara smiles in amusement. Soon you're past your limit and you ejaculate "
+                                + "onto her face and breasts. She giggles and licks the cum from her lips as you claim her clothes as a trophy and walk away.";
+            } else {
+                message += " brushing near your throbbing clit. You've given her two orgasms with no relief yourself, so it only takes a bit of teasing to bring you to the brink. Just as "
+                                + "you feel your orgasm building, she eases away, denying you your release. She gives you her most impish smile as you look at her questioningly. "
+                                + "<i>\"I never said I was going to get you off, but feel free to continue on your own.\"</i> She lets go of you and sits back in front of you smugly. <i>\"Just a bit of petty "
+                                + "revenge for taking advantage of me.\"</i><p>It seems unfair that she's the one setting the terms when you won the fight, but she's not actually obliged to do "
+                                + "anything for you. But you can't just leave in your current state. If someone else caught you this frustrated and aroused, you wouldn't stand a chance. "
+                                + "You grudgingly take matters into your own hands and bury your hand in your pussy while Mara smiles in amusement. Soon you're past your limit and you shake "
+                                + "with pleasure. She giggles as you claim her clothes as a trophy and walk away.";
+            }
+            return message;
+        }
     }
 
     @Override
     public String describe(Combat c) {
         if (character.has(Trait.madscientist)) {
             return "Mara has gone high tech. She has a rig of equipment on harnesses that seem carefully placed so as not to interfere with clothing removal. The glasses she's wearing appear to be "
-                            + "computerized rather than perscription. She also has a device of unknown purpose strapped to her arm. Underneath all of that, she has the same cute, mischevious expression she "
+                            + "computerized rather than prescription. She also has a device of unknown purpose strapped to her arm. Underneath all of that, she has the same cute, mischievous expression she "
                             + "you're used to.";
         } else {
             return "Mara is short and slender, with a small heart shaped face. She has dark skin, and short, curly black hair. Her size and cute features make her look a few years "
@@ -313,10 +370,10 @@ public class Mara extends BasePersonality {
             target = c.p1;
         }
         if (flag == Result.intercourse) {
-            return "You thrust you dick into Mara's tight pussy while she writhes under you. You tease and pinch her nipples to increase her pleasure, but it's not really necessary. "
-                            + "She's obviously already on the brink of climax. Thanks to the pleasuable tightness of her entrance, you're not far behind her, but you should be able to endure "
+            return "You thrust your dick into Mara's tight pussy while she writhes under you. You tease and pinch her nipples to increase her pleasure, but it's not really necessary. "
+                            + "She's obviously already on the brink of climax. Thanks to the pleasurable tightness of her entrance, you're not far behind her, but you should be able to endure "
                             + "if you're careful with the pace. You've barely finished forming the thought when Mara catches you by surprise with an aggressive kiss and rolls on top of you. She "
-                            + "rides you passionately, too aroused to prevent her own orgasm, but eager to take you with her. It works. He already tight pussy squeezes your cock as she orgasms, "
+                            + "rides you passionately, too aroused to prevent her own orgasm, but eager to take you with her. It works. Her already tight pussy squeezes your cock as she orgasms, "
                             + "milking you. Pleasure overwhelms you as you fill her womb with your seed.<p>Mara absentmindedly rubs her abdomen as you both enjoy the afterglow. <i>\"You came so much "
                             + "inside me. It'll be a wonder if I'm not knocked up. If we have a boy, should we name him after you? "
                             + target.name() + " jr. has a nice ring to it.\"</i> Pregnant?! You "
@@ -363,14 +420,15 @@ public class Mara extends BasePersonality {
                                 + "accelerates her stroking and you realize you won't be able to last more than a few more seconds. Sure enough, your jizz soon shoots into the air like "
                                 + "a fountain and paints her legs and feet. Mara continues to stimulate your oversensitized dick and balls while she finishes herself off, apparently too "
                                 + "caught up in her own enjoyment to notice your discomfort.";
-        } else {
-            return "Mara runs her fingers down the length of your body, tickling you mercilessly. Her probing fingers avoid your nipples and pussy, "
-                            +"focusing instead on the ticklish areas under your arms, behind your knees and on your inner thighs. You squirm against "
-                            + assist.name() +" pleading for mercy. After a few minutes of this, sweet electric shivers wrack your body when Mara's "
-                            + "dancing fingers tease your dripping pussy and your clit. You are unable to decide whether you are being tickled into "
-                            + "submission or fingered to ecstasy. Your oversensitized pussy finally can't take any more and trys clamping onto her "
-                            + "teasing fingers. But she keeps you on the edge until you collapse in exhaustion. You dimly hear Mara talking but you "
-                            + "feel too warn out to understand her.";
+            } else {
+                return "Mara runs her fingers down the length of your body, tickling you mercilessly. Her probing fingers avoid your nipples and pussy, "
+                                + "focusing instead on the ticklish areas under your arms, behind your knees and on your inner thighs. You squirm against "
+                                + assist.name()
+                                + " pleading for mercy. After a few minutes of this, sweet electric shivers wrack your body when Mara's "
+                                + "dancing fingers tease your dripping pussy and your clit. You are unable to decide whether you are being tickled into "
+                                + "submission or fingered to ecstasy. Your oversensitized pussy finally can't take any more and trys clamping onto her "
+                                + "teasing fingers. But she keeps you on the edge until you collapse in exhaustion. You dimly hear Mara talking but you "
+                                + "feel too worn out to understand her.";
             }
         }
         if (target.hasDick()) {
@@ -390,7 +448,7 @@ public class Mara extends BasePersonality {
                                             + "that. Do you want to be next?\"</i>",
                             target.name(), target.name(), target.name(), target.possessivePronoun(),
                             target.possessivePronoun(), target.possessivePronoun(), target.name(), target.pronoun(),
-                            target.possessivePronoun(), target.possessivePronoun(), target.possessivePronoun(),
+                            target.possessivePronoun(), target.possessivePronoun(), Global.capitalizeFirstLetter(target.possessivePronoun()),
                             target.name(), target.possessivePronoun(), target.directObject(), target.pronoun(),
                             Global.capitalizeFirstLetter(target.possessivePronoun()));
         }
@@ -420,8 +478,8 @@ public class Mara extends BasePersonality {
         } else {
             return "So far this hasn't been your proudest fight. " + target.name()
                             + " was able to pin you early on and is currently rubbing your dick between her thighs. "
-                            + "You've almost given up hope of victory, until you spot Mara creeping up behind her. She seems thoroughly amused by your predicament and make no "
-                            + "move to help you, dispite being easily in reach. You give her your best puppy-dog eyes, silently pleading while trying not to give away her presence. "
+                            + "You've almost given up hope of victory, until you spot Mara creeping up behind her. She seems thoroughly amused by your predicament and makes no "
+                            + "move to help you, despite being easily in reach. You give her your best puppy-dog eyes, silently pleading while trying not to give away her presence. "
                             + "Mara lets you squirm a little longer before winking at you and tickling " + target.name()
                             + " under her arms. " + target.name() + " lets out a startled yelp "
                             + "and jumps in surprise. You use the moment of distraction to push her off balance and Mara immediately secures her arms.<br>";
@@ -452,20 +510,6 @@ public class Mara extends BasePersonality {
                         + "you. You spot her back by the door, holding your clothes. She winks mischeviously and dashes into the building. You give chase, still naked. You manage to catch her just "
                         + "as she reaches your room. You consider it a minor miracle no one saw the two of you streaking through the dorm building. You're going to have to find a way to pay her back "
                         + "before morning.";
-    }
-
-    public void advance() {
-        character.add(Trait.madscientist);
-        character.body.addReplace(PussyPart.cybernetic, 1);
-        character.unequipAllClothing();
-        character.outfitPlan.add(Clothing.getByID("bra"));
-        character.outfitPlan.add(Clothing.getByID("shirt"));
-        character.outfitPlan.add(Clothing.getByID("labcoat"));
-        character.outfitPlan.add(Clothing.getByID("underwear"));
-        character.outfitPlan.add(Clothing.getByID("pants"));
-        character.outfitPlan.add(Clothing.getByID("pantyhose"));
-        character.outfitPlan.add(Clothing.getByID("boots"));
-        character.mod(Attribute.Science, 1);
     }
 
     @Override

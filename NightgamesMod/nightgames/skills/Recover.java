@@ -4,25 +4,36 @@ import nightgames.characters.Character;
 import nightgames.combat.Combat;
 import nightgames.combat.Result;
 import nightgames.global.Global;
+import nightgames.nskills.tags.SkillTag;
 import nightgames.stance.Neutral;
+import nightgames.status.Stsflag;
 
 public class Recover extends Skill {
 
     public Recover(Character self) {
         super("Recover", self);
+        addTag(SkillTag.positioning);
+        addTag(SkillTag.escaping);
     }
 
     @Override
     public boolean usable(Combat c, Character target) {
-        return c.getStance().prone(getSelf()) && c.getStance().mobile(getSelf()) && getSelf().canAct();
+        return c.getStance()
+                .prone(getSelf())
+                        && c.getStance()
+                            .mobile(getSelf())
+                        && getSelf().canAct();
     }
 
     @Override
     public boolean resolve(Combat c, Character target) {
         if (getSelf().human()) {
             c.write(getSelf(), deal(c, 0, Result.normal, target));
-        } else if (target.human()) {
-            c.write(getSelf(), receive(c, 0, Result.normal, target));
+        } else if (c.shouldPrintReceive(target)) {
+            if (target.is(Stsflag.blinded))
+                printBlinded(c);
+            else
+                c.write(getSelf(), receive(c, 0, Result.normal, target));
         }
         c.setStance(new Neutral(getSelf(), target));
         getSelf().heal(c, Global.random(3));
@@ -56,7 +67,7 @@ public class Recover extends Skill {
 
     @Override
     public String receive(Combat c, int damage, Result modifier, Character target) {
-        return getSelf().name() + " scrambles back to her feet.";
+        return getSelf().name() + " scrambles back to "+getSelf().possessivePronoun()+" feet.";
     }
 
     @Override

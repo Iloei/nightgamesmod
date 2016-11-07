@@ -1,6 +1,6 @@
 package nightgames.status;
 
-import org.json.simple.JSONObject;
+import com.google.gson.JsonObject;
 
 import nightgames.characters.Attribute;
 import nightgames.characters.Character;
@@ -8,12 +8,19 @@ import nightgames.characters.Emotion;
 import nightgames.characters.body.BodyPart;
 import nightgames.combat.Combat;
 import nightgames.global.Global;
-import nightgames.global.JSONUtils;
+import nightgames.skills.damage.DamageType;
 
 public class Horny extends DurationStatus {
     private float magnitude;
     private String source;
 
+    public static Status getWithPsycologicalType(Character from, Character target, float magnitude, int duration, String source) {
+        return new Horny(target, (float) from.modifyDamage(DamageType.temptation, target, magnitude), duration, source);
+    }
+    public static Horny getWithBiologicalType(Character from, Character target, float magnitude, int duration, String source) {
+        return new Horny(target, (float) from.modifyDamage(DamageType.biological, target, magnitude), duration, source);
+    }
+    
     public Horny(Character affected, float magnitude, int duration, String source) {
         super("Horny", affected, duration);
         this.source = source;
@@ -33,7 +40,8 @@ public class Horny extends DurationStatus {
             return "Your heart pounds in your chest as you try to surpress your arousal from contacting " + source
                             + ".";
         } else {
-            return affected.name() + " is flushed and her nipples are noticeably hard from contacting " + source + ".";
+            return affected.name() + " is flushed and "+affected.possessivePronoun()
+            +" nipples are noticeably hard from contacting " + source + ".";
         }
     }
 
@@ -144,20 +152,18 @@ public class Horny extends DurationStatus {
         return new Horny(newAffected, magnitude, getDuration(), source);
     }
 
-    @Override
-    @SuppressWarnings("unchecked")
-    public JSONObject saveToJSON() {
-        JSONObject obj = new JSONObject();
-        obj.put("type", getClass().getSimpleName());
-        obj.put("source", source);
-        obj.put("magnitude", magnitude);
-        obj.put("duration", getDuration());
+    @Override  public JsonObject saveToJson() {
+        JsonObject obj = new JsonObject();
+        obj.addProperty("type", getClass().getSimpleName());
+        obj.addProperty("source", source);
+        obj.addProperty("magnitude", magnitude);
+        obj.addProperty("duration", getDuration());
         return obj;
     }
 
-    @Override
-    public Status loadFromJSON(JSONObject obj) {
-        return new Horny(null, JSONUtils.readFloat(obj, "magnitude"), JSONUtils.readInteger(obj, "duration"),
-                        JSONUtils.readString(obj, "source"));
+    @Override public Status loadFromJson(JsonObject obj) {
+        return new Horny(null, obj.get("magnitude").getAsFloat(), obj.get("duration").getAsInt(),
+                        obj.get("source").getAsString());
     }
+
 }

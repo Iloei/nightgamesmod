@@ -1,12 +1,11 @@
 package nightgames.status;
 
-import org.json.simple.JSONObject;
+import com.google.gson.JsonObject;
 
 import nightgames.characters.Attribute;
 import nightgames.characters.Character;
 import nightgames.characters.body.BodyPart;
 import nightgames.combat.Combat;
-import nightgames.global.JSONUtils;
 
 public class Tied extends DurationStatus {
 
@@ -26,7 +25,8 @@ public class Tied extends DurationStatus {
             return "The rope wrapped around you digs into your body, but only slows you down a bit.";
         }
 
-        return affected.name() + " squirms against the rope, but you know you tied it well.";
+        return String.format("%s squirms against the rope, but %s %s tied it well.", affected.subject(),
+                        c.getOther(affected).subjectAction("know"), c.getOther(affected).pronoun());
     }
 
     @Override
@@ -93,18 +93,15 @@ public class Tied extends DurationStatus {
         return new Tied(target);
     }
 
-    @SuppressWarnings("unchecked")
-    @Override
-    public JSONObject saveToJSON() {
-        JSONObject obj = new JSONObject();
-        obj.put("type", getClass().getSimpleName());
-        obj.put("duration", getDuration());
+     @Override public JsonObject saveToJson() {
+        JsonObject obj = new JsonObject();
+        obj.addProperty("type", getClass().getSimpleName());
+        obj.addProperty("duration", getDuration());
         return obj;
     }
 
-    @Override
-    public Status loadFromJSON(JSONObject obj) {
-        return new Tied(null, JSONUtils.readInteger(obj, "duration"));
+    @Override public Status loadFromJson(JsonObject obj) {
+        return new Tied(null, obj.get("duration").getAsInt());
     }
 
     @Override

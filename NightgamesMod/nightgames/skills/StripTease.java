@@ -7,11 +7,14 @@ import nightgames.characters.Trait;
 import nightgames.combat.Combat;
 import nightgames.combat.Result;
 import nightgames.global.Global;
+import nightgames.nskills.tags.SkillTag;
 import nightgames.status.Alluring;
+import nightgames.status.Stsflag;
 
 public class StripTease extends Skill {
     public StripTease(Character self) {
         super("Strip Tease", self);
+        addTag(SkillTag.undressing);
     }
 
     public StripTease(String string, Character self) {
@@ -24,9 +27,13 @@ public class StripTease extends Skill {
     }
 
     public static boolean isUsable(Combat c, Character self, Character target) {
-        return self.stripDifficulty(target) == 0 && !self.has(Trait.strapped) && self.canAct()
-                        && c.getStance().mobile(self) && !self.mostlyNude() && !c.getStance().prone(self)
-                        && c.getStance().front(self) && (!self.breastsAvailable() || !self.crotchAvailable());
+        return self.stripDifficulty(target) == 0 && !self.has(Trait.strapped) && self.canAct() && c.getStance()
+                                                                                                   .mobile(self)
+                        && !self.mostlyNude() && !c.getStance()
+                                                   .prone(self)
+                        && c.getStance()
+                            .front(self)
+                        && (!self.breastsAvailable() || !self.crotchAvailable());
     }
 
     @Override
@@ -48,14 +55,19 @@ public class StripTease extends Skill {
     public boolean resolve(Combat c, Character target) {
         if (getSelf().human()) {
             c.write(getSelf(), deal(c, 0, Result.normal, target));
-        } else if (target.human()) {
-            c.write(getSelf(), receive(c, 0, Result.normal, target));
+        } else if (c.shouldPrintReceive(target)) {
+            if (target.human() && target.is(Stsflag.blinded))
+                printBlinded(c);
+            else
+                c.write(getSelf(), receive(c, 0, Result.normal, target));
         }
-        int m = 15 + Global.random(5);
-        target.tempt(c, getSelf(), m);
-        getSelf().undress(c);
-        getSelf().add(c, new Alluring(getSelf(), 5));
+        if (!target.is(Stsflag.blinded)) {
+            int m = 15 + Global.random(5);
+            target.tempt(c, getSelf(), m);
+            getSelf().add(c, new Alluring(getSelf(), 5));
+        }
         target.emote(Emotion.horny, 30);
+        getSelf().undress(c);
         getSelf().emote(Emotion.confident, 15);
         getSelf().emote(Emotion.dominant, 15);
         return true;
@@ -80,9 +92,11 @@ public class StripTease extends Skill {
 
     @Override
     public String receive(Combat c, int damage, Result modifier, Character target) {
-        return getSelf().name()
-                        + " asks for a quick time out and starts sexily slipping her clothes off. Although there are no time outs in the rules, you can't help staring "
-                        + "at the seductive display until she finishes with a cute wiggle of her naked ass.";
+        return String.format("%s asks for a quick time out and starts sexily slipping %s clothes off."
+                        + " Although there are no time outs in the rules, %s can't help staring "
+                        + "at the seductive display until %s finishes with a cute wiggle of %s naked ass.",
+                        getSelf().subject(), target.nameOrPossessivePronoun(), target.subject(),
+                        getSelf().subject(), getSelf().possessivePronoun());
     }
 
     @Override

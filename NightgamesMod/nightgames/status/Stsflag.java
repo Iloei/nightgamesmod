@@ -56,4 +56,12 @@ public enum Stsflag {
     aggressive,
     divinerecoil,
     detected,
+    magicmilkcraving,
+    partiallyCorrupted,
+    parasited,
+    mimicry, 
+    blinded,
+    victimComplex, 
+    primed, 
+    glamour
 }

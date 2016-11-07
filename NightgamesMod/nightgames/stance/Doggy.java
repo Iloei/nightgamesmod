@@ -16,8 +16,10 @@ public class Doggy extends MaledomSexStance {
         if (top.human()) {
             return bottom.name() + " is on her hands and knees in front of you, while you fuck her Doggy style.";
         } else {
-            return "Things aren't going well for you. You're down on your hands and knees, while " + top.name()
-                            + " is fucking you from behind.";
+            return String.format("Things aren't going well for %s. %s %s down on %s hands and knees, while %s"
+                            + " is fucking %s from behind.", bottom.subject(),
+                            Global.capitalizeFirstLetter(bottom.pronoun()), bottom.action("are", "is"),
+                            bottom.possessivePronoun(), top.subject(), bottom.directObject());
         }
     }
 
@@ -96,5 +98,10 @@ public class Doggy extends MaledomSexStance {
                                         + "some complex maneuvering, {other:subject-action:end|ends} up on the floor while {self:subject-action:straddle|straddles} {other:possessive} hips in a reverse cowgirl position.",
                         bottom, top));
         return new ReverseCowgirl(bottom, top);
+    }
+    
+    @Override
+    public int dominance() {
+        return 3;
     }
 }

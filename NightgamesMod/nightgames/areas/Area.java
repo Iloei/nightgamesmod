@@ -1,6 +1,5 @@
 package nightgames.areas;
 
-import java.awt.Rectangle;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -8,6 +7,7 @@ import java.util.HashSet;
 import nightgames.actions.Movement;
 import nightgames.characters.Character;
 import nightgames.combat.IEncounter;
+import nightgames.global.DebugFlags;
 import nightgames.global.Global;
 import nightgames.status.Stsflag;
 import nightgames.trap.Trap;
@@ -20,13 +20,14 @@ public class Area implements Serializable {
     public String name;
     public HashSet<Area> adjacent;
     public HashSet<Area> shortcut;
+    public HashSet<Area> jump;
     public ArrayList<Character> present;
     public String description;
     public IEncounter fight;
     public boolean alarm;
     public Trap trap;
     public ArrayList<Deployable> env;
-    public MapDrawHint drawHint;
+    public transient MapDrawHint drawHint;
     private Movement enumerator;
     private boolean pinged;
 
@@ -40,6 +41,7 @@ public class Area implements Serializable {
         this.enumerator = enumerator;
         adjacent = new HashSet<Area>();
         shortcut = new HashSet<Area>();
+        jump = new HashSet<Area>();
         present = new ArrayList<Character>();
         env = new ArrayList<Deployable>();
         alarm = false;
@@ -54,6 +56,10 @@ public class Area implements Serializable {
 
     public void shortcut(Area sc) {
         shortcut.add(sc);
+    }
+    
+    public void jump(Area adj){
+        jump.add(adj);
     }
 
     public boolean open() {
@@ -114,9 +120,10 @@ public class Area implements Serializable {
     public boolean encounter(Character p) {
         if (fight != null && fight.checkIntrude(p)) {
             p.intervene(fight, fight.getPlayer(1), fight.getPlayer(2));
-        } else if (present.size() > 1) {
+        } else if (present.size() > 1 && canFight(p)) {
             for (Character opponent : Global.getMatch().combatants) {
-                if (present.contains(opponent) && opponent != p) {
+                if (present.contains(opponent) && opponent != p
+                                && canFight(opponent)) {
                     fight = Global.getMatch().getType().buildEncounter(p, opponent, this);
                     return fight.spotCheck();
                 }
@@ -125,6 +132,10 @@ public class Area implements Serializable {
         return false;
     }
 
+    private boolean canFight(Character c) {
+        return !c.human() || !Global.isDebugOn(DebugFlags.DEBUG_SPECTATE);
+    }
+    
     public boolean opportunity(Character target, Trap trap) {
         if (present.size() > 1) {
             for (Character opponent : present) {
@@ -186,9 +197,9 @@ public class Area implements Serializable {
         env.remove(triggered);
     }
 
-    public Deployable get(Deployable type) {
+    public Deployable get(Class<? extends Deployable> type) {
         for (Deployable thing : env) {
-            if (thing.getClass() == type.getClass()) {
+            if (thing.getClass() == type) {
                 return thing;
             }
         }

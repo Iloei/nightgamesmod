@@ -1,21 +1,21 @@
 package nightgames.status;
 
-import org.json.simple.JSONObject;
+import static nightgames.requirements.RequirementShortcuts.eitherinserted;
+
+import com.google.gson.JsonObject;
 
 import nightgames.characters.Attribute;
 import nightgames.characters.Character;
 import nightgames.characters.Emotion;
 import nightgames.characters.body.BodyPart;
-import nightgames.characters.custom.requirement.EitherInsertedRequirement;
 import nightgames.combat.Combat;
-import nightgames.global.JSONUtils;
 
 public class LegLocked extends Status {
     private float toughness;
 
     public LegLocked(Character affected, float dc) {
         super("Leg Locked", affected);
-        requirements.add(new EitherInsertedRequirement(true));
+        requirements.add(eitherinserted());
         requirements.add((c, self, other) -> toughness > .01);
         toughness = dc;
         flag(Stsflag.leglocked);
@@ -26,7 +26,9 @@ public class LegLocked extends Status {
         if (affected.human()) {
             return "Her legs are locked around your waist, preventing you from pulling out.";
         } else {
-            return "Your legs are wrapped around her waist, preventing her from pulling out.";
+            return String.format("%s legs are wrapped around %s waist, preventing %s from pulling out.",
+                            c.getOther(affected).nameOrPossessivePronoun(), affected.nameOrPossessivePronoun(),
+                            affected.directObject());
         }
     }
 
@@ -117,17 +119,14 @@ public class LegLocked extends Status {
         return new LegLocked(newAffected, toughness);
     }
 
-    @Override
-    @SuppressWarnings("unchecked")
-    public JSONObject saveToJSON() {
-        JSONObject obj = new JSONObject();
-        obj.put("type", getClass().getSimpleName());
-        obj.put("toughness", toughness);
+    @Override  public JsonObject saveToJson() {
+        JsonObject obj = new JsonObject();
+        obj.addProperty("type", getClass().getSimpleName());
+        obj.addProperty("toughness", toughness);
         return obj;
     }
 
-    @Override
-    public Status loadFromJSON(JSONObject obj) {
-        return new LegLocked(null, JSONUtils.readFloat(obj, "toughness"));
+    @Override public Status loadFromJson(JsonObject obj) {
+        return new LegLocked(null, obj.get("toughness").getAsFloat());
     }
 }

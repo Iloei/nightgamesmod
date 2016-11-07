@@ -1,6 +1,6 @@
 package nightgames.status;
 
-import org.json.simple.JSONObject;
+import com.google.gson.JsonObject;
 
 import nightgames.characters.Attribute;
 import nightgames.characters.Character;
@@ -23,9 +23,10 @@ public class Charmed extends DurationStatus {
     @Override
     public String describe(Combat c) {
         if (affected.human()) {
-            return "You feel an irresistible attraction to her and can't imagine harming her.";
+            return "You feel an irresistible attraction to her and can't imagine harming "+c.getOther(affected).name()+".";
         } else {
-            return affected.name() + " is looking at you like a lovestruck teenager.";
+            return affected.name() + " is looking at "+c.getOther(affected).nameDirectObject()
+                            +" like a lovestruck teenager.";
         }
     }
 
@@ -115,16 +116,13 @@ public class Charmed extends DurationStatus {
         return new Charmed(newAffected);
     }
 
-    @Override
-    @SuppressWarnings("unchecked")
-    public JSONObject saveToJSON() {
-        JSONObject obj = new JSONObject();
-        obj.put("type", getClass().getSimpleName());
+    @Override  public JsonObject saveToJson() {
+        JsonObject obj = new JsonObject();
+        obj.addProperty("type", getClass().getSimpleName());
         return obj;
     }
 
-    @Override
-    public Status loadFromJSON(JSONObject obj) {
+    @Override public Status loadFromJson(JsonObject obj) {
         return new Charmed(null);
     }
 }

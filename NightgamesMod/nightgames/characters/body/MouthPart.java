@@ -1,14 +1,14 @@
 package nightgames.characters.body;
 
-import org.json.simple.JSONObject;
-
 import nightgames.characters.Attribute;
 import nightgames.characters.Character;
 import nightgames.characters.Trait;
 import nightgames.combat.Combat;
 import nightgames.global.Global;
+import nightgames.skills.damage.DamageType;
 import nightgames.status.FluidAddiction;
 import nightgames.status.Frenzied;
+import nightgames.status.PartiallyCorrupted;
 import nightgames.status.Stsflag;
 import nightgames.status.Trance;
 
@@ -27,13 +27,20 @@ public class MouthPart extends GenericBodyPart {
         super(desc, hotness, pleasure, sensitivity, "mouth", "a ");
     }
 
+    public MouthPart() {
+        super(generic);
+    }
+
     @Override
     public double applyBonuses(Character self, Character opponent, BodyPart target, double damage, Combat c) {
         double bonus = 0;
         if (target.isErogenous() && opponent.has(Trait.lickable)) {
             c.write(opponent, Global.capitalizeFirstLetter(opponent.subjectAction("shudder", "shudders"))
                             + " when licked by " + self.directObject() + ".");
-            bonus += Global.random(4) + 5;
+            bonus += Global.random(2, 4) + opponent.getLevel() / 20;
+            if (target.isGenital()) {
+                bonus += Global.random(2, 4) + Math.max(0, opponent.getLevel() / 20 - 2);
+            }
         }
         String fluid = target.getFluids(opponent);
         if (!fluid.isEmpty() && opponent.has(Trait.lacedjuices)) {
@@ -46,8 +53,8 @@ public class MouthPart extends GenericBodyPart {
                             + fluid + " leaves " + self.nameOrPossessivePronoun() + " in a state of frenzy.");
             self.add(c, new Frenzied(self, 3));
         }
-        if (!fluid.isEmpty() && opponent.has(Trait.addictivefluids) && !self.is(Stsflag.tolerance)) {
-            self.add(c, new FluidAddiction(self, opponent, 5));
+        if (!fluid.isEmpty() && target.getFluidAddictiveness(opponent) > 0 && !self.is(Stsflag.tolerance)) {
+            self.add(c, new FluidAddiction(self, opponent, target.getFluidAddictiveness(opponent), 5));
             FluidAddiction st = (FluidAddiction) self.getStatus(Stsflag.fluidaddiction);
             if (st.activated()) {
                 if (self.human()) {
@@ -89,12 +96,20 @@ public class MouthPart extends GenericBodyPart {
             bonus += Global.random(3) + Global.clamp(self.get(Attribute.Seduction) / 3, 10, 30)
                             * self.getArousal().percent() / 100.0;
         }
+        if (self.has(Trait.sweetlips) && c.getStance().sub(self)) {
+            c.write(opponent, Global.format("<br>{self:name-possessive} enticing lips turns {other:direct-object} on as {other:subject-action:force|forces} {other:reflective} into them.",
+                            self, opponent));
+            opponent.tempt(c, self, this, (int) self.modifyDamage(DamageType.temptation, opponent, damage));
+        }
         if (self.has(Trait.catstongue)) {
-            c.write(opponent, Global.format("<br>{self:name-possessive} abbrasive tongue produces an unique sensation.",
+            c.write(opponent, Global.format("<br>{self:name-possessive} abrasive tongue produces an unique sensation.",
                             self, opponent));
 
             bonus += Global.random(3) + 4;
             opponent.pain(c, 8 + Global.random(10), false, true);
+        }
+        if (self.has(Trait.corrupting)) {
+            opponent.add(c, new PartiallyCorrupted(self));
         }
         if (self.has(Trait.soulsucker)) {
             if (!self.human()) {
@@ -126,18 +141,6 @@ public class MouthPart extends GenericBodyPart {
     @Override
     public String getFluids(Character c) {
         return "saliva";
-    }
-
-    @Override
-    public BodyPart loadFromDict(JSONObject dict) {
-        try {
-            GenericBodyPart part = new MouthPart((String) dict.get("desc"), (Double) dict.get("hotness"),
-                            (Double) dict.get("pleasure"), (Double) dict.get("sensitivity"));
-            return part;
-        } catch (ClassCastException e) {
-            System.err.println(e.getMessage());
-        }
-        return null;
     }
 
     @Override

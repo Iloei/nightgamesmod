@@ -1,6 +1,6 @@
 package nightgames.status;
 
-import org.json.simple.JSONObject;
+import com.google.gson.JsonObject;
 
 import nightgames.characters.Attribute;
 import nightgames.characters.Character;
@@ -18,7 +18,8 @@ public class Oiled extends Status {
         if (affected.human()) {
             return "Your skin is slick with oil and kinda feels weird.";
         } else {
-            return affected.name() + " is shiny with lubricant, making you more tempted to touch and rub her skin.";
+            return String.format("%s is shiny with lubricant, making %s more tempted to touch and rub %s skin.",
+                            affected.subject(), c.getOther(affected).subject(), affected.possessivePronoun());
         }
     }
 
@@ -97,16 +98,13 @@ public class Oiled extends Status {
         return new Oiled(newAffected);
     }
 
-    @Override
-    @SuppressWarnings("unchecked")
-    public JSONObject saveToJSON() {
-        JSONObject obj = new JSONObject();
-        obj.put("type", getClass().getSimpleName());
+    @Override  public JsonObject saveToJson() {
+        JsonObject obj = new JsonObject();
+        obj.addProperty("type", getClass().getSimpleName());
         return obj;
     }
 
-    @Override
-    public Status loadFromJSON(JSONObject obj) {
+    @Override public Status loadFromJson(JsonObject obj) {
         return new Oiled(null);
     }
 }

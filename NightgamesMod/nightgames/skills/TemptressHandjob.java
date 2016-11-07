@@ -6,12 +6,15 @@ import nightgames.characters.Trait;
 import nightgames.combat.Combat;
 import nightgames.combat.Result;
 import nightgames.global.Global;
+import nightgames.nskills.tags.SkillTag;
 import nightgames.status.FiredUp;
 
 public class TemptressHandjob extends Handjob {
 
     public TemptressHandjob(Character self) {
         super("Skillful Handjob", self);
+        addTag(SkillTag.usesHands);
+        addTag(SkillTag.pleasure);
     }
 
     @Override
@@ -31,7 +34,7 @@ public class TemptressHandjob extends Handjob {
         if (target.roll(this, c, accuracy(c))) {
             if (!target.body.getRandomCock().isReady(target)) {
                 m -= 7;
-                target.body.pleasure(getSelf(), getSelf().body.getRandom("hands"), target.body.getRandomCock(), m, c);
+                target.body.pleasure(getSelf(), getSelf().body.getRandom("hands"), target.body.getRandomCock(), m, c, this);
                 if (target.body.getRandomCock().isReady(target)) {
                     // Was flaccid, got hard
                     c.write(getSelf(), deal(c, 0, Result.special, target));
@@ -46,7 +49,7 @@ public class TemptressHandjob extends Handjob {
                 int stack = status == null || !status.getPart().equals("hands") ? 0 : status.getStack();
                 c.write(getSelf(), deal(c, stack, Result.normal, target));
                 target.body.pleasure(getSelf(), getSelf().body.getRandom("hands"), target.body.getRandomCock(),
-                                m + m * stack / 2, c);
+                                m + m * stack / 2, c, this);
                 getSelf().add(c, new FiredUp(getSelf(), target, "hands"));
             }
         } else {
@@ -68,15 +71,15 @@ public class TemptressHandjob extends Handjob {
                                 getSelf().subjectAction("reach", "reaches"), target.nameOrPossessivePronoun(),
                                 target.pronoun(), target.possessivePronoun());
             case weak:
-                return String.format("%s %s limp %s and %s it expertly, but it remains flaccid despite %s best efforts",
-                                getSelf().subjectAction("grab", "grabs"), target.nameOrPossessivePronoun(),
-                                target.body.getRandomCock().describe(target), getSelf().action("fondle", "fondles"),
+                return String.format("%s %s limp %s and %s it expertly, but it remains flaccid despite %s best efforts.",
+                                getSelf().subjectAction("grab"), target.nameOrPossessivePronoun(),
+                                target.body.getRandomCock().describe(target), getSelf().action("fondle"),
                                 getSelf().possessivePronoun());
             case special:
                 return String.format(
                                 "%s %s limp %s and %s it expertly, and it grows fully hard under %s skilled touch.",
-                                getSelf().subjectAction("grab", "grabs"), target.nameOrPossessivePronoun(),
-                                target.body.getRandomCock().describe(target), getSelf().action("massage", "massages"),
+                                getSelf().subjectAction("grab"), target.nameOrPossessivePronoun(),
+                                target.body.getRandomCock().describe(target), getSelf().action("massage"),
                                 getSelf().possessivePronoun());
             default: // should be Result.normal
                 // already hard
@@ -84,8 +87,8 @@ public class TemptressHandjob extends Handjob {
                     case 0:
                         return String.format(
                                         "%s hold of %s %s and %s %s fingers over it briskly, hitting all the right spots.",
-                                        getSelf().subjectAction("take", "takes"), target.nameOrPossessivePronoun(),
-                                        target.body.getRandomCock().describe(target), getSelf().action("run", "runs"),
+                                        getSelf().subjectAction("take"), target.nameOrPossessivePronoun(),
+                                        target.body.getRandomCock().describe(target), getSelf().action("run"),
                                         getSelf().possessivePronoun());
                     case 1:
                         return String.format(
@@ -105,5 +108,10 @@ public class TemptressHandjob extends Handjob {
     public String receive(Combat c, int damage, Result modifier, Character target) {
         // use formatted strings in deal
         return deal(c, damage, modifier, target);
+    }
+    
+    @Override
+    public Stage getStage() {
+        return Stage.FOREPLAY;
     }
 }

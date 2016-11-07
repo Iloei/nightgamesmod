@@ -1,6 +1,6 @@
 package nightgames.characters.body;
 
-import org.json.simple.JSONObject;
+import com.google.gson.JsonObject;
 
 import nightgames.characters.Attribute;
 import nightgames.characters.Character;
@@ -8,6 +8,10 @@ import nightgames.characters.Trait;
 import nightgames.combat.Combat;
 import nightgames.global.Global;
 import nightgames.items.clothing.ClothingSlot;
+import nightgames.status.Abuff;
+import nightgames.status.Stsflag;
+import nightgames.status.addiction.Addiction;
+import nightgames.status.addiction.AddictionType;
 
 public enum BreastsPart implements BodyPart {
     flat("flat", "", 0),
@@ -17,7 +21,9 @@ public enum BreastsPart implements BodyPart {
     d("D Cup", "round", 4),
     dd("DD Cup", "large", 5),
     e("E Cup", "huge", 6),
-    f("F Cup", "glorious", 7);
+    f("F Cup", "glorious", 7),
+    g("F Cup", "massive", 8),
+    h("F Cup", "colossal", 9);
 
     public String desc;
     public String name;
@@ -95,7 +101,8 @@ public enum BreastsPart implements BodyPart {
 
     @Override
     public double getHotness(Character self, Character opponent) {
-        double hotness = -.25 + size * .3 * self.getOutfit().getExposure(ClothingSlot.top);
+        double hotness = -.25 + size * .3 * self.getOutfit()
+                                                .getExposure(ClothingSlot.top);
         if (!opponent.hasDick()) {
             hotness /= 2;
         }
@@ -146,17 +153,14 @@ public enum BreastsPart implements BodyPart {
         }
     }
 
-    @SuppressWarnings("unchecked")
-    @Override
-    public JSONObject save() {
-        JSONObject obj = new JSONObject();
-        obj.put("enum", name());
+     @Override public JsonObject save() {
+        JsonObject obj = new JsonObject();
+        obj.addProperty("enum", name());
         return obj;
     }
 
-    @Override
-    public BodyPart load(JSONObject obj) {
-        return BreastsPart.valueOf((String) obj.get("enum"));
+    @Override public BodyPart load(JsonObject obj) {
+        return BreastsPart.valueOf(obj.get("enum").getAsString());
     }
 
     @Override
@@ -167,6 +171,15 @@ public enum BreastsPart implements BodyPart {
     @Override
     public String getFluids(Character c) {
         return c.has(Trait.lactating) ? "milk" : "";
+    }
+
+    @Override
+    public double getFluidAddictiveness(Character c) {
+        if (c.has(Trait.lactating) && c.has(Trait.addictivefluids)) {
+            return 1;
+        } else {
+            return 0;
+        }
     }
 
     @Override
@@ -181,6 +194,74 @@ public enum BreastsPart implements BodyPart {
 
     @Override
     public double applyReceiveBonuses(Character self, Character opponent, BodyPart target, double damage, Combat c) {
+        if (self.has(Trait.lactating) && target.isType("mouth")) {
+            if (self.has(Trait.magicmilk)) {
+                float addictionLevel;
+                Addiction addiction;
+                if (opponent.human()) {
+                    Global.getPlayer().addict(AddictionType.MAGIC_MILK, self, Addiction.LOW_INCREASE);
+                    addiction = Global.getPlayer().getAddiction(AddictionType.MAGIC_MILK).get();
+                    addictionLevel = addiction.getMagnitude();
+                } else {
+                    addictionLevel = 0;
+                    addiction = null;
+                }
+                if (addictionLevel < Addiction.LOW_THRESHOLD) {
+                    // not addicted
+                    c.write(opponent,
+                                    Global.format("{self:NAME-POSSESSIVE} milk makes the blood surge from {other:name-possessive} head into {other:possessive} crotch, leaving {other:direct-object} light-headed and horny",
+                                                    self, opponent));
+                } else if (addictionLevel < .3f) {
+                    // starting addiction
+                    c.write(opponent,
+                                    Global.format("{self:NAME-POSSESSIVE} milk seems sweeter than usual. While {other:subject} know from experience that {self:possessive} saccharine cream is a powerful aphrodisiac, {other:pronoun} can't but help drinking down more.",
+                                                    self, opponent));
+                } else if (addictionLevel < .45f) {
+                    // addicted
+                    c.write(opponent,
+                                    Global.format("As Cassie's milk dribbles down her breasts, you awake to a powerful need for her cream. Ignoring the potential aphrodisiac effectes, you quickly capture her nipples in your lips and relieve your parched throat with her delicious milk.",
+                                                    self, opponent));
+                } else if (addictionLevel < Addiction.HIGH_THRESHOLD) {
+                    // dependent
+                    c.write(opponent,
+                                    Global.format("{other:NAME} desperately {other:action:suck|sucks} at {self:name-possessive} milky teats as soon as they're available. {other:POSSESSIVE} burning need to imbibe {self:possessive} sweet milk is overpowering any other thoughts. "
+                                                    + "{self:SUBJECT} smiles at {other:direct-object} and gently cradles {other:possessive} head, rocking {other:direct-object} back and forth while {other:subject} drink. "
+                                                    + "The warm milk settles in {other:possessive} belly, slowly setting {other:possessive} body on fire with arousal.",
+                                    self, opponent));
+                } else {
+                    // enslaved
+                    c.write(opponent,
+                                    Global.format("{other:SUBJECT} slavishly wrap {other:possessive} lips around {self:name-possessive} immaculate teats and start suckling. "
+                                                    + "{other:POSSESSIVE} vision darkens around the edges and {other:possessive} world is completely focused on draining {self:possessive} wonderful breasts. "
+                                                    + "{self:SUBJECT} smiles at {other:direct-object} and gently cradles {other:possessive} head, rocking {other:direct-object} back and forth while {other:subject} drink. "
+                                                    + "The warm milk settles in {other:possessive} belly, slowly setting {other:possessive} body on fire with arousal.",
+                                    self, opponent));
+    
+                }
+                if (addiction != null)
+                    opponent.tempt(c, self, this, (int) (15 + addiction.getMagnitude() * 35));
+    
+                if (opponent.is(Stsflag.magicmilkcraving)) {
+                    // temporarily relieve craving
+                    addiction.alleviateCombat(Addiction.LOW_INCREASE);
+    
+                }
+                if (c.getCombatantData(opponent) != null) {
+                    int timesDrank = c.getCombatantData(opponent)
+                                      .getIntegerFlag("drank_magicmilk")
+                                    + 1;
+                    c.getCombatantData(opponent)
+                     .setIntegerFlag("drank_magicmilk", timesDrank);
+                }
+            }
+            if (self.has(Trait.sedativecream)) {
+                c.write(opponent,
+                                Global.format("The power seems to leave {other:name-possessive} body as {other:pronoun-action:sip|sips} {self:possessive} cloying cream.",
+                                                self, opponent));
+                opponent.weaken(c, opponent.getStamina().max() / 10);
+                opponent.add(new Abuff(opponent, Attribute.Power, -Global.random(1, 3), 20));
+            }
+        }
         return 0;
     }
 
@@ -226,12 +307,12 @@ public enum BreastsPart implements BodyPart {
     }
 
     @Override
-    public int counterValue(BodyPart other) {
+    public int counterValue(BodyPart otherPart, Character self, Character other) {
         return 0;
     }
 
     @Override
-    public BodyPartMod getMod() {
+    public BodyPartMod getMod(Character self) {
         return BodyPartMod.noMod;
     }
 }

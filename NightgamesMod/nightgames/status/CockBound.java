@@ -1,13 +1,12 @@
 package nightgames.status;
 
-import org.json.simple.JSONObject;
+import com.google.gson.JsonObject;
 
 import nightgames.characters.Attribute;
 import nightgames.characters.Character;
 import nightgames.characters.Emotion;
 import nightgames.characters.body.BodyPart;
 import nightgames.combat.Combat;
-import nightgames.global.JSONUtils;
 
 public class CockBound extends Status {
     private float toughness;
@@ -22,11 +21,8 @@ public class CockBound extends Status {
 
     @Override
     public String describe(Combat c) {
-        if (affected.human()) {
-            return "Your dick is bound by " + binding + ".";
-        } else {
-            return "Her girl-cock is restrained by " + binding + ".";
-        }
+        return String.format("%s %s is bound by %s.", affected.nameOrPossessivePronoun(),
+                        affected.body.getRandomCock().describe(affected), binding);
     }
 
     @Override
@@ -122,18 +118,15 @@ public class CockBound extends Status {
         return new CockBound(newAffected, toughness, binding);
     }
 
-    @Override
-    @SuppressWarnings("unchecked")
-    public JSONObject saveToJSON() {
-        JSONObject obj = new JSONObject();
-        obj.put("type", getClass().getSimpleName());
-        obj.put("toughness", toughness);
-        obj.put("binding", binding);
+    @Override  public JsonObject saveToJson() {
+        JsonObject obj = new JsonObject();
+        obj.addProperty("type", getClass().getSimpleName());
+        obj.addProperty("toughness", toughness);
+        obj.addProperty("binding", binding);
         return obj;
     }
 
-    @Override
-    public Status loadFromJSON(JSONObject obj) {
-        return new CockBound(null, JSONUtils.readFloat(obj, "toughness"), JSONUtils.readString(obj, "binding"));
+    @Override public Status loadFromJson(JsonObject obj) {
+        return new CockBound(null, obj.get("toughness").getAsFloat(), obj.get("binding").getAsString());
     }
 }

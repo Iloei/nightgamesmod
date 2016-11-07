@@ -1,11 +1,12 @@
 package nightgames.modifier.item;
 
+import nightgames.characters.Character;
 import nightgames.ftc.FTCMatch;
 import nightgames.global.Global;
 import nightgames.items.Item;
-import nightgames.characters.Character;
 
 public class FlagOnlyModifier extends ItemModifier {
+    private static final String name = "flag-only";
 
     @Override
     public boolean itemIsBanned(Character c, Item i) {
@@ -14,7 +15,10 @@ public class FlagOnlyModifier extends ItemModifier {
 
     @Override
     public String toString() {
-        return "flag-only";
+        return name;
     }
 
+    public String name() {
+        return name;
+    }
 }

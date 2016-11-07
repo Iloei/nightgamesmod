@@ -21,8 +21,10 @@ public class CoiledSex extends FemdomSexStance {
             return "Your limbs are coiled around " + bottom.nameOrPossessivePronoun() + " body and "
                             + bottom.possessivePronoun() + " cock is inside you.";
         } else {
-            return "You're on top of " + top.nameDirectObject()
-                            + " with your cock trapped in her pussy and your face smothered in her cleavage.";
+            return String.format("%s on top of %s with %s cock trapped in %s pussy and %s face smothered in %s cleavage.",
+                            bottom.subjectAction("are", "is"), top.nameDirectObject(),
+                            bottom.possessivePronoun(), top.possessivePronoun(),
+                            bottom.possessivePronoun(), top.possessivePronoun());
         }
     }
 
@@ -97,5 +99,10 @@ public class CoiledSex extends FemdomSexStance {
     @Override
     public double pheromoneMod(Character self) {
         return 10;
+    }
+    
+    @Override
+    public int dominance() {
+        return 4;
     }
 }

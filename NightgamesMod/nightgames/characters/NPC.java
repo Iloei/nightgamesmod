@@ -1,14 +1,19 @@
 package nightgames.characters;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import nightgames.actions.Action;
+import nightgames.actions.Leap;
 import nightgames.actions.Move;
 import nightgames.actions.Movement;
 import nightgames.actions.Resupply;
@@ -19,6 +24,7 @@ import nightgames.characters.custom.CommentSituation;
 import nightgames.characters.custom.RecruitmentData;
 import nightgames.characters.custom.effect.CustomEffect;
 import nightgames.combat.Combat;
+import nightgames.combat.CombatScene;
 import nightgames.combat.IEncounter;
 import nightgames.combat.Result;
 import nightgames.ftc.FTCMatch;
@@ -31,7 +37,11 @@ import nightgames.items.clothing.Clothing;
 import nightgames.items.clothing.ClothingSlot;
 import nightgames.skills.Nothing;
 import nightgames.skills.Skill;
+import nightgames.skills.Stage;
 import nightgames.skills.Tactics;
+import nightgames.skills.damage.DamageType;
+import nightgames.skills.strategy.CombatStrategy;
+import nightgames.skills.strategy.DefaultStrategy;
 import nightgames.stance.Behind;
 import nightgames.stance.Neutral;
 import nightgames.stance.Position;
@@ -49,15 +59,34 @@ public class NPC extends Character {
     public Emotion mood;
     public Plan plan;
     private boolean fakeHuman;
+    public boolean isStartCharacter = false;
+    private List<CombatStrategy> personalStrategies;
+    private List<CombatScene> postCombatScenes;
 
     public NPC(String name, int level, Personality ai) {
         super(name, level);
         this.ai = ai;
         fakeHuman = false;
-        emotes = new HashMap<Emotion, Integer>();
+        emotes = new HashMap<>();
         for (Emotion e : Emotion.values()) {
             emotes.put(e, 0);
         }
+        mood = Emotion.confident;
+        initialGender = CharacterSex.female;
+        personalStrategies = new ArrayList<>();
+        postCombatScenes = new ArrayList<>();
+    }
+
+    protected void addPersonalStrategy(CombatStrategy strategy) {
+        personalStrategies.add(strategy);
+    }
+
+    protected void addCombatScene(CombatScene scene) {
+        postCombatScenes.add(scene);
+    }
+    
+    public List<CombatScene> getPostCombatScenes() {
+        return Collections.unmodifiableList(postCombatScenes);
     }
 
     @Override
@@ -109,10 +138,10 @@ public class NPC extends Character {
             }
         }
         if (per >= 6 && per < 8) {
-            if (stamina.percent() <= 66) {
-                visible = visible + "She's starting to look tired<br>";
-            } else if (stamina.percent() <= 33) {
+            if (stamina.percent() <= 33) {
                 visible = visible + "She looks a bit unsteady on her feet<br>";
+            } else if (stamina.percent() <= 66) {
+                visible = visible + "She's starting to look tired<br>";
             }
         }
         if (per >= 3 && per < 7) {
@@ -130,13 +159,16 @@ public class NPC extends Character {
             }
         }
 
+        if (per >= 5) {
+            visible += Stage.describe(this);
+        }
+        
         if (per >= 6 && status.size() > 0) {
             visible += "List of statuses:<br><i>";
-            for (Status s : status) {
-                visible += s + ", ";
-            }
+            visible += status.stream().map(Status::toString).collect(Collectors.joining(", "));
             visible += "</i><br>";
         }
+        
         return visible;
     }
 
@@ -151,9 +183,9 @@ public class NPC extends Character {
         gainXP(getVictoryXP(target));
         target.gainXP(getDefeatXP(this));
         if (c.getStance().inserted() && c.getStance().dom(this)) {
-            getMojo().gain(2);
+            getMojo().gain(1);
             if (has(Trait.mojoMaster)) {
-                getMojo().gain(2);
+                getMojo().gain(1);
             }
         }
         target.arousal.empty();
@@ -234,7 +266,6 @@ public class NPC extends Character {
 
     @Override
     public void act(Combat c) {
-        HashSet<Skill> available = new HashSet<Skill>();
         Character target;
         if (c.p1 == this) {
             target = c.p2;
@@ -244,7 +275,35 @@ public class NPC extends Character {
         if (target.human() && Global.isDebugOn(DebugFlags.DEBUG_SKILL_CHOICES)) {
             pickSkillsWithGUI(c, target);
         } else {
-            for (Skill act : skills) {
+            // if there's no strategy, try getting a new one.
+            if (!c.getCombatantData(this).getStrategy().isPresent()) {
+                c.getCombatantData(this).setStrategy(c, this, pickStrategy(c));
+            }
+            // if the strategy is out of moves, try getting a new one.
+            Collection<Skill> possibleSkills = c.getCombatantData(this).getStrategy().get().nextSkills(c, this);
+            if (possibleSkills.isEmpty()) {
+                if (Global.isDebugOn(DebugFlags.DEBUG_STRATEGIES)) {
+                    System.out.printf("%s has no moves available for strategy %s, picking a new one\n", this.getName(), c.getCombatantData(this).getStrategy().get().getClass().getSimpleName());
+                }
+                c.getCombatantData(this).setStrategy(c, this, pickStrategy(c));
+                possibleSkills = c.getCombatantData(this).getStrategy().get().nextSkills(c, this);
+            }
+            if (Global.isDebugOn(DebugFlags.DEBUG_STRATEGIES)) {
+                System.out.println("next skills: " +  possibleSkills);
+            }
+            // if there are still no moves, just use all available skills for this turn and try again next turn.
+            if (possibleSkills.isEmpty()) {
+                if (Global.isDebugOn(DebugFlags.DEBUG_STRATEGIES)) {
+                    System.out.printf("%s has no moves available for strategy %s\n", this.getName(), c.getCombatantData(this).getStrategy().get().getClass().getSimpleName());
+                }
+                possibleSkills = getSkills();
+            } else {
+                if (Global.isDebugOn(DebugFlags.DEBUG_STRATEGIES)) {
+                    System.out.printf("%s is using strategy %s\n", this.getName(), c.getCombatantData(this).getStrategy().get().getClass().getSimpleName());
+                }
+            }
+            HashSet<Skill> available = new HashSet<>();
+            for (Skill act : possibleSkills) {
                 if (Skill.skillIsUsable(c, act, target) && cooldownAvailable(act)) {
                     available.add(act);
                 }
@@ -257,15 +316,39 @@ public class NPC extends Character {
         }
     }
 
+    private CombatStrategy pickStrategy(Combat c) {
+        Map<Double, CombatStrategy> stratsWithCumulativeWeights = new HashMap<>();
+        DefaultStrategy defaultStrat = new DefaultStrategy();
+        double lastWeight = defaultStrat.weight(c, this);
+        stratsWithCumulativeWeights.put(lastWeight, defaultStrat);
+        List<CombatStrategy> allStrategies = new ArrayList<>(CombatStrategy.availableStrategies);
+        allStrategies.addAll(personalStrategies);
+        for (CombatStrategy strat: allStrategies) {
+            if (strat.weight(c, this) < .01 || strat.nextSkills(c, this).isEmpty()) {
+                continue;
+            }
+            lastWeight += strat.weight(c, this);
+            stratsWithCumulativeWeights.put(lastWeight, strat);
+        }
+        double random = Global.randomdouble() * lastWeight;
+        for (Map.Entry<Double, CombatStrategy> entry: stratsWithCumulativeWeights.entrySet()) {
+            if (random < entry.getKey()) {
+                return entry.getValue();
+            }
+        }
+        // we should have picked something, but w/e just return the default if we need to
+        return defaultStrat;
+    }
+
     public Skill actFast(Combat c) {
-        HashSet<Skill> available = new HashSet<Skill>();
+        HashSet<Skill> available = new HashSet<>();
         Character target;
         if (c.p1 == this) {
             target = c.p2;
         } else {
             target = c.p1;
         }
-        for (Skill act : skills) {
+        for (Skill act : getSkills()) {
             if (Skill.skillIsUsable(c, act, target) && cooldownAvailable(act)) {
                 available.add(act);
             }
@@ -358,6 +441,10 @@ public class NPC extends Character {
         return ai.temptLiner(c);
     }
 
+    @Override public Growth getGrowth() {
+        return ai.getGrowth();
+    }
+
     @Override
     public void detect() {
         // TODO Auto-generated method stub
@@ -367,7 +454,9 @@ public class NPC extends Character {
     @Override
     public void move() {
         if (state == State.combat) {
-            location.fight.battle();
+            if (location != null && location.fight != null) {
+                location.fight.battle();
+            }
         } else if (busy > 0) {
             busy--;
         } else if (this.is(Stsflag.enthralled) && !has(Trait.immobile)) {
@@ -392,8 +481,8 @@ public class NPC extends Character {
             masturbate();
         } else {
             if (!location.encounter(this)) {
-                HashSet<Action> available = new HashSet<Action>();
-                HashSet<Movement> radar = new HashSet<Movement>();
+                HashSet<Action> available = new HashSet<>();
+                HashSet<Movement> radar = new HashSet<>();
                 FTCMatch match;
                 if (Global.checkFlag(Flag.FTC)) {
                     match = (FTCMatch) Global.getMatch();
@@ -424,6 +513,11 @@ public class NPC extends Character {
                             available.add(new Shortcut(path));
                         }
                     }
+                    if(getPure(Attribute.Ninjutsu)>=5){
+                        for(Area path:location.jump){
+                            available.add(new Leap(path));
+                        }
+                    }
                 }
                 for (Action act : Global.getActions()) {
                     if (act.usable(this)) {
@@ -442,8 +536,16 @@ public class NPC extends Character {
 
     @Override
     public void faceOff(Character opponent, IEncounter enc) {
-        // enc.fightOrFlight(this, ai.fightFlight(opponent));
-        enc.parse(ai.fightFlight(opponent) ? Encs.fight : Encs.flee, this, opponent);
+        Encs encType;
+        if (ai.fightFlight(opponent)) {
+            encType = Encs.fight;
+        } else if (has(Item.SmokeBomb)) {
+            encType = Encs.smoke;
+            remove(Item.SmokeBomb);
+        } else {
+            encType = Encs.flee;
+        }
+        enc.parse(encType, this, opponent);
     }
 
     @Override
@@ -499,7 +601,7 @@ public class NPC extends Character {
 
     @Override
     public void promptTrap(IEncounter enc, Character target, Trap trap) {
-        if (ai.attack(target)) {
+        if (ai.attack(target) && (!target.human() || !Global.isDebugOn(DebugFlags.DEBUG_SPECTATE))) {
             enc.trap(this, target, trap);
         } else {
             location.endEncounter();
@@ -550,7 +652,7 @@ public class NPC extends Character {
                 if (c.getStance().sub(this)) {
                     Position reverse = c.getStance().reverse(c);
                     if (reverse != c.getStance() && !BodyPart.hasOnlyType(reverse.bottomParts(), "strapon")) {
-                        c.setStance(reverse);
+                        c.setStance(reverse, this, false);
                     } else {
                         c.write(this, Global.format(
                                         "{self:NAME-POSSESSIVE} quick wits find a gap in {other:name-possessive} hold and {self:action:slip|slips} away.",
@@ -572,24 +674,24 @@ public class NPC extends Character {
                 if (clothes != null) {
                     c.write(this, name()
                                     + " manages to catch you groping her clothing, and in a swift motion strips off your "
-                                    + clothes.getName());
+                                    + clothes.getName() + ".");
                 } else {
                     c.write(this, name()
-                                    + " manages to dodge your groping hands and gives a retaliating slap in return");
+                                    + " manages to dodge your groping hands and gives a retaliating slap in return.");
                     target.pain(c, 4 + Math.min(Global.random(get(Attribute.Power)), 20));
                 }
                 break;
             case positioning:
                 if (c.getStance().dom(this)) {
                     c.write(this, name() + " outmanuevers you and you're exhausted from the struggle.");
-                    target.weaken(c, 10);
+                    target.weaken(c, (int) this.modifyDamage(DamageType.stance, target, 15));
                 } else {
                     c.write(this, name() + " outmanuevers you and catches you from behind when you stumble.");
                     c.setStance(new Behind(this, target));
                 }
                 break;
             default:
-                c.write(this, name() + " manages to dodge your attack and gives a retaliating slap in return");
+                c.write(this, name() + " manages to dodge your attack and gives a retaliating slap in return.");
                 target.pain(c, 4 + Math.min(Global.random(get(Attribute.Power)), 20));
         }
     }
@@ -598,8 +700,8 @@ public class NPC extends Character {
         if (plist.isEmpty()) {
             return null;
         }
-        float sum = 0;
-        ArrayList<WeightedSkill> wlist = new ArrayList<WeightedSkill>();
+        double sum = 0;
+        ArrayList<WeightedSkill> wlist = new ArrayList<>();
         for (WeightedSkill wskill : plist) {
             sum += wskill.weight;
             wlist.add(new WeightedSkill(sum, wskill.skill));
@@ -611,7 +713,7 @@ public class NPC extends Character {
         if (wlist.isEmpty()) {
             return null;
         }
-        float s = Global.randomfloat() * sum;
+        double s = Global.randomdouble() * sum;
         for (WeightedSkill wskill : wlist) {
             if (Global.isDebugOn(DebugFlags.DEBUG_SKILLS)) {
                 System.out.printf("%.1f/%.1f %s\n", wskill.weight, s, wskill.skill);
@@ -661,6 +763,7 @@ public class NPC extends Character {
     @Override
     public void eot(Combat c, Character opponent, Skill last) {
         super.eot(c, opponent, last);
+        ai.eot(c, opponent, last);
         if (opponent.pet != null && canAct() && c.getStance().mobile(this) && !c.getStance().prone(this)) {
             if (get(Attribute.Speed) > opponent.pet.ac() * Global.random(20)) {
                 opponent.pet.caught(c, this);
@@ -669,12 +772,12 @@ public class NPC extends Character {
         if (opponent.has(Trait.pheromones) && opponent.getArousal().percent() >= 20 && opponent.rollPheromones(c)) {
             c.write(opponent, "<br>You see " + name()
                             + " swoon slightly as she gets close to you. Seems like she's starting to feel the effects of your musk.");
-            add(c, new Horny(this, opponent.getPheromonePower(), 10,
+            add(c, Horny.getWithBiologicalType(opponent, this, opponent.getPheromonePower(), 10,
                             opponent.nameOrPossessivePronoun() + " pheromones"));
         }
-        if (opponent.has(Trait.smqueen) && !is(Stsflag.masochism)) {
-            c.write(Global.capitalizeFirstLetter(
-                            String.format("<br>%s seems to shudder in arousal at the thought of pain.", subject())));
+        if (opponent.has(Trait.sadist) && !is(Stsflag.masochism)) {
+            c.write("<br>"+Global.capitalizeFirstLetter(
+                            String.format("%s seems to shudder in arousal at the thought of pain.", subject())));
             add(c, new Masochistic(this));
         }
         if (has(Trait.RawSexuality)) {
@@ -730,7 +833,7 @@ public class NPC extends Character {
         return (NPC) super.clone();
     }
 
-    public float rateAction(Combat c, float selfFit, float otherFit, CustomEffect effect) {
+    public double rateAction(Combat c, double selfFit, double otherFit, CustomEffect effect) {
         // Clone ourselves a new combat... This should clone our characters, too
         Combat c2;
         try {
@@ -753,15 +856,15 @@ public class NPC extends Character {
         }
         effect.execute(c2, newSelf, newOther);
         Global.debugSimulation -= 1;
-        float selfFitnessDelta = newSelf.getFitness(c) - selfFit;
-        float otherFitnessDelta = newSelf.getOtherFitness(c, newOther) - otherFit;
+        double selfFitnessDelta = newSelf.getFitness(c) - selfFit;
+        double otherFitnessDelta = newSelf.getOtherFitness(c, newOther) - otherFit;
         if (Global.isDebugOn(DebugFlags.DEBUG_SKILLS_RATING) && (c2.p1.human() || c2.p2.human())) {
             System.out.println("After:\n" + c2.debugMessage());
         }
         return selfFitnessDelta - otherFitnessDelta;
     }
 
-    private float rateMove(Skill skill, Combat c, float selfFit, float otherFit) {
+    private double rateMove(Skill skill, Combat c, double selfFit, double otherFit) {
         // Clone ourselves a new combat... This should clone our characters, too
         if (Global.isDebugOn(DebugFlags.DEBUG_SKILLS_RATING) && (c.p1.human() || c.p2.human())) {
             System.out.println("===> Rating " + skill);
@@ -782,23 +885,23 @@ public class NPC extends Character {
         // The higher, the better the AI will plan for "rare" events better
         final int RUN_COUNT = 5;
         // Decrease to get an "easier" AI. Make negative to get a suicidal AI.
-        final float RATING_FACTOR = 0.02f;
+        final double RATING_FACTOR = 0.02f;
 
         // Starting fitness
         Character other = c.getOther(this);
-        float selfFit = getFitness(c);
-        float otherFit = getOtherFitness(c, other);
+        double selfFit = getFitness(c);
+        double otherFit = getOtherFitness(c, other);
 
         // Now simulate the result of all actions
-        ArrayList<WeightedSkill> moveList = new ArrayList<WeightedSkill>();
-        float sum = 0;
+        ArrayList<WeightedSkill> moveList = new ArrayList<>();
+        double sum = 0;
         for (WeightedSkill wskill : plist) {
             // Run it a couple of times
-            float rating, raw_rating = 0;
+            double rating, raw_rating = 0;
             if (wskill.skill.type(c) == Tactics.fucking && has(Trait.experienced)) {
                 wskill.weight += 1.0;
             }
-            if (wskill.skill.type(c) == Tactics.damage && has(Trait.smqueen)) {
+            if (wskill.skill.type(c) == Tactics.damage && has(Trait.sadist)) {
                 wskill.weight += 1.0;
             }
             for (int j = 0; j < RUN_COUNT; j++) {
@@ -807,7 +910,7 @@ public class NPC extends Character {
 
             wskill.weight += ai.getAiModifiers().modAttack(wskill.skill.getClass());
             // Sum up rating, add to map
-            rating = (float) Math.pow(2, RATING_FACTOR * raw_rating + wskill.weight + wskill.skill.priorityMod(c)
+            rating = (double) Math.pow(2, RATING_FACTOR * raw_rating + wskill.weight + wskill.skill.priorityMod(c)
                             + Global.getMatch().condition.getSkillModifier().encouragement(wskill.skill, c, this));
             sum += rating;
             moveList.add(new WeightedSkill(sum, raw_rating, rating, wskill.skill));
@@ -825,7 +928,7 @@ public class NPC extends Character {
             System.out.println(s);
         }
         // Select
-        float s = Global.randomfloat() * sum;
+        double s = Global.randomdouble() * sum;
         for (WeightedSkill entry : moveList) {
             if (Global.isDebugOn(DebugFlags.DEBUG_SKILLS)) {
                 System.out.printf("%.1f/%.1f %s\n", entry.weight, s, entry.skill.toString());
@@ -836,7 +939,13 @@ public class NPC extends Character {
         }
         return moveList.get(moveList.size() - 1).skill;
     }
-
+    
+    @Override
+    protected void resolveOrgasm(Combat c, Character opponent, BodyPart selfPart, BodyPart opponentPart, int times,
+                    int totalTimes) {
+        super.resolveOrgasm(c, opponent, selfPart, opponentPart, times, totalTimes);
+        ai.resolveOrgasm(c, opponent, selfPart, opponentPart, times, totalTimes);
+    }
     @Override
     public String getPortrait(Combat c) {
         return ai.image(c);
@@ -865,5 +974,44 @@ public class NPC extends Character {
         if (comments.isEmpty() || comments.size() == 1 && comments.containsKey(CommentSituation.NO_COMMENT))
             return Optional.empty();
         return Optional.of((String) Global.pickRandom(comments.values().toArray()));
+    }
+    
+    public Emotion moodSwing() {
+        Emotion current = mood;
+        int max=emotes.get(current);
+        for(Emotion e: emotes.keySet()){
+            if(emotes.get(e)>max){
+                mood=e;
+                max=emotes.get(e);
+            }
+        }
+        return mood;
+    }
+    
+    public void decayMood(){
+        for(Emotion e: emotes.keySet()){
+            if(mostlyNude()&&!has(Trait.exhibitionist)&&!has(Trait.shameless)&& e==Emotion.nervous){
+                emotes.put(e, emotes.get(e)-((emotes.get(e)-50)/2));
+            }else if(mostlyNude()&&!has(Trait.exhibitionist)&& e==Emotion.horny){
+                emotes.put(e, emotes.get(e)-((emotes.get(e)-50)/2));
+            }
+            else if(!mostlyNude()&&e==Emotion.confident){
+                emotes.put(e, emotes.get(e)-((emotes.get(e)-50)/2));
+            }
+            else{
+                if(emotes.get(e)>=5){
+                    emotes.put(e, emotes.get(e)-(emotes.get(e)/2));
+                }
+            }
+        }
+    }
+    
+    @Override
+    public void upkeep() {
+        super.upkeep();
+        moodSwing();
+        decayMood();
+        update();
+        notifyObservers();
     }
 }

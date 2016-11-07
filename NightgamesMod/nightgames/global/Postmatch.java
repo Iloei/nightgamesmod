@@ -30,6 +30,7 @@ public class Postmatch implements Scene {
         if (normal) {
             normal();
         }
+        Global.endNight();
     }
 
     @Override
@@ -69,9 +70,5 @@ public class Postmatch implements Scene {
         } else {
             Global.gui().message("You walk back to your dorm and get yourself cleaned up.");
         }
-        if (Global.checkFlag(Flag.autosave)) {
-            Global.save(true);
-        }
-        Global.gui().endMatch();
     }
 }

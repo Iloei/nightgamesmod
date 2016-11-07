@@ -30,20 +30,23 @@ public class SpawnFaerie extends Skill {
 
     @Override
     public int getMojoCost(Combat c) {
-        return 25;
+        return getSelf().has(Trait.faefriend) ? 10 : 25;
     }
 
     @Override
     public String describe(Combat c) {
-        return "Summon a Faerie familiar to support you: 15 Mojo";
+        return "Summon a Faerie familiar to support you: "+getMojoCost(c)+" Mojo";
     }
 
     @Override
     public boolean resolve(Combat c, Character target) {
-        int power = 7;
-        int ac = 4;
+        int power = 7 + getSelf().get(Attribute.Arcane) / 10;
+        int ac = 4 + getSelf().get(Attribute.Arcane) / 10;
         if (getSelf().has(Trait.leadership)) {
             power += 5;
+        }
+        if (getSelf().has(Trait.tactician)) {
+            ac += 3;
         }
         if (getSelf().human()) {
             c.write(getSelf(), deal(c, 0, Result.normal, target));
@@ -93,8 +96,10 @@ public class SpawnFaerie extends Skill {
 
     @Override
     public String receive(Combat c, int damage, Result modifier, Character target) {
-        return getSelf().name()
-                        + " casts a spell as she extends her hand. In a flash of magic, a small, naked girl with butterfly wings appears in her palm.";
+        return String.format("%s casts a spell as %s extends %s hand. In a flash of magic,"
+                        + " a small, naked girl with butterfly wings appears in %s palm.",
+                        getSelf().subject(), getSelf().pronoun(), getSelf().possessivePronoun(),
+                        getSelf().possessivePronoun());
     }
 
 }

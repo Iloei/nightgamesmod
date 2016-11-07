@@ -2,12 +2,15 @@ package nightgames.skills;
 
 import nightgames.characters.Attribute;
 import nightgames.characters.Character;
+import nightgames.characters.Emotion;
 import nightgames.characters.Trait;
 import nightgames.combat.Combat;
 import nightgames.combat.Result;
 import nightgames.global.Global;
 import nightgames.status.Horny;
 import nightgames.status.Shamed;
+import nightgames.status.addiction.Addiction;
+import nightgames.status.addiction.AddictionType;
 
 public class ShamefulDisplay extends Skill {
 
@@ -35,11 +38,17 @@ public class ShamefulDisplay extends Skill {
     public boolean resolve(Combat c, Character target) {
         if (getSelf().human()) {
             c.write(deal(c, 0, Result.normal, target));
-        } else if (target.human()) {
+            if (Global.getPlayer().checkAddiction(AddictionType.MIND_CONTROL, target)) {
+                Global.getPlayer().unaddictCombat(AddictionType.MIND_CONTROL, 
+                                target, Addiction.LOW_INCREASE, c);
+                c.write(getSelf(), "Acting submissively voluntarily reduces Mara's control over you.");
+            }
+        } else if (c.shouldPrintReceive(target)) {
             c.write(receive(c, 0, Result.normal, target));
         }
         getSelf().add(c, new Shamed(getSelf()));
-        target.add(c, new Horny(target, getSelf().get(Attribute.Submissive) / 4, 2, " (Dominant Thrill)"));
+        int divisor = target.getMood() == Emotion.dominant ? 3 : 4;
+        target.add(c, Horny.getWithPsycologicalType(getSelf(), target, getSelf().get(Attribute.Submissive) / divisor, 2, " (Dominant Thrill)"));
         return true;
     }
 
@@ -75,17 +84,20 @@ public class ShamefulDisplay extends Skill {
     public String receive(Combat c, int damage, Result modifier, Character target) {
         if (getSelf().hasDick()) {
             return String.format(
-                            "%s fondles %s %s while looking at you with an almost daring look."
-                                            + " %s seems to find the situation arousing, and so do you.",
+                            "%s fondles %s %s while looking at %s with an almost daring look."
+                                            + " %s seems to find the situation arousing, and so %s %s.",
                             getSelf().name(), getSelf().possessivePronoun(),
                             getSelf().body.getRandomCock().describe(getSelf()),
-                            Global.capitalizeFirstLetter(getSelf().pronoun()));
+                            target.nameDirectObject(),
+                            Global.capitalizeFirstLetter(getSelf().pronoun()),
+                            target.action("do", "does"), target.subject());
         } else {
             return String.format(
                             "%s lifts %s hips and spreads %s pussy lips open. %s's "
-                                            + "bright red with shame, but the sight is lewd enough to drive you wild.",
+                                            + "bright red with shame, but the sight is lewd enough to drive %s wild.",
                             getSelf().name(), getSelf().possessivePronoun(), getSelf().possessivePronoun(),
-                            Global.capitalizeFirstLetter(getSelf().pronoun()));
+                            Global.capitalizeFirstLetter(getSelf().pronoun()),
+                            target.nameDirectObject());
         }
     }
 

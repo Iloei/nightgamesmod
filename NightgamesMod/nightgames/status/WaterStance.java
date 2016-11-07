@@ -1,6 +1,6 @@
 package nightgames.status;
 
-import org.json.simple.JSONObject;
+import com.google.gson.JsonObject;
 
 import nightgames.characters.Attribute;
 import nightgames.characters.Character;
@@ -19,7 +19,7 @@ public class WaterStance extends DurationStatus {
         if (affected.human()) {
             return "You're as smooth and responsive as flowing water.";
         } else {
-            return affected.name() + " continues her flowing movements.";
+            return affected.name() + " continues "+affected.possessivePronoun()+" flowing movements.";
         }
     }
 
@@ -103,16 +103,13 @@ public class WaterStance extends DurationStatus {
         return new WaterStance(newAffected);
     }
 
-    @Override
-    @SuppressWarnings("unchecked")
-    public JSONObject saveToJSON() {
-        JSONObject obj = new JSONObject();
-        obj.put("type", getClass().getSimpleName());
+    @Override  public JsonObject saveToJson() {
+        JsonObject obj = new JsonObject();
+        obj.addProperty("type", getClass().getSimpleName());
         return obj;
     }
 
-    @Override
-    public Status loadFromJSON(JSONObject obj) {
+    @Override public Status loadFromJson(JsonObject obj) {
         return new WaterStance(null);
     }
 }

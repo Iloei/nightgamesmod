@@ -6,13 +6,13 @@ import java.util.List;
 import java.util.Map;
 
 import nightgames.characters.custom.effect.CustomEffect;
-import nightgames.characters.custom.requirement.CustomRequirement;
 import nightgames.items.Item;
+import nightgames.requirements.Requirement;
 
 public class TransformationOption {
     String option;
     Map<Item, Integer> ingredients;
-    List<CustomRequirement> requirements;
+    List<Requirement> requirements;
     String scene;
     String additionalRequirements;
     CustomEffect effect;

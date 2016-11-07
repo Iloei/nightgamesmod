@@ -113,8 +113,8 @@ public class Decider {
                 addAllSkillsWithPriority(priority, stripping, 2.0f);
                 addAllSkillsWithPriority(priority, pleasure, 2.0f);
                 addAllSkillsWithPriority(priority, debuff, 2.0f);
+                addAllSkillsWithPriority(priority, damage, 2.0f);
                 addAllSkillsWithPriority(priority, summoning, 1.0f);
-                addAllSkillsWithPriority(priority, damage, 1.0f);
                 addAllSkillsWithPriority(priority, misc, 1f);
                 break;
         }
@@ -205,7 +205,8 @@ public class Decider {
         int max = 0;
         Character bff = null;
         if (!self.attractions.isEmpty()) {
-            for (Character friend : self.attractions.keySet()) {
+            for (String key : self.attractions.keySet()) {
+                Character friend = Global.getCharacterByType(key);
                 if (self.getAttraction(friend) > max && !friend.human()) {
                     max = self.getAttraction(friend);
                     bff = friend;

@@ -69,19 +69,15 @@ public class ReverseAssFuck extends Fuck {
         c.write(getSelf(), Global.format(premessage, getSelf(), target));
 
         int m = 5 + Global.random(5);
-        if (getSelf().human()) {
-            c.write(getSelf(), deal(c, m, Result.normal, target));
-        } else if (target.human()) {
-            c.write(getSelf(), receive(c, m, Result.normal, target));
-        }
+        writeOutput(c, Result.normal, target);
 
         int otherm = m;
         if (getSelf().has(Trait.insertion)) {
             otherm += Math.min(getSelf().get(Attribute.Seduction) / 4, 40);
         }
-        target.body.pleasure(getSelf(), getSelfOrgan(), getTargetOrgan(target), m, c);
-        getSelf().body.pleasure(target, getTargetOrgan(target), getSelfOrgan(), otherm, c);
-        c.setStance(new AnalCowgirl(getSelf(), target));
+        target.body.pleasure(getSelf(), getSelfOrgan(), getTargetOrgan(target), m, c, this);
+        getSelf().body.pleasure(target, getTargetOrgan(target), getSelfOrgan(), otherm, c, this);
+        c.setStance(new AnalCowgirl(getSelf(), target), getSelf(), getSelf().canMakeOwnDecision());
         getSelf().emote(Emotion.dominant, 30);
         if (Global.random(100) < 5 + 2 * getSelf().get(Attribute.Fetish)) {
             target.add(c, new BodyFetish(target, getSelf(), "ass", .25));
@@ -119,9 +115,10 @@ public class ReverseAssFuck extends Fuck {
 
     @Override
     public String receive(Combat c, int damage, Result modifier, Character target) {
-        return String.format("%s makes sure her %s is sufficiently lubricated and pushes %s %s into her greedy hole.",
-                        getSelf().name(), getSelfOrgan().describe(getSelf()), target.nameOrPossessivePronoun(),
-                        getTargetOrgan(target).describe(target));
+        return String.format("%s makes sure %s %s is sufficiently lubricated and pushes %s %s into %s greedy hole.",
+                        getSelf().name(), getSelf().possessivePronoun(), getSelfOrgan().describe(getSelf()), 
+                        target.nameOrPossessivePronoun(),
+                        getTargetOrgan(target).describe(target), getSelf().possessivePronoun());
     }
 
     @Override
@@ -132,5 +129,10 @@ public class ReverseAssFuck extends Fuck {
     @Override
     public boolean makesContact() {
         return true;
+    }
+    
+    @Override
+    public Stage getStage() {
+        return Stage.FINISHER;
     }
 }

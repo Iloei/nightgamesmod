@@ -2,16 +2,11 @@ package nightgames.skills;
 
 import nightgames.characters.Attribute;
 import nightgames.characters.Character;
-import nightgames.characters.body.BreastsPart;
-import nightgames.characters.body.BasicCockPart;
 import nightgames.combat.Combat;
 import nightgames.combat.Result;
-import nightgames.global.Global;
 import nightgames.items.Item;
 import nightgames.items.clothing.Clothing;
 import nightgames.items.clothing.ClothingTrait;
-import nightgames.status.Hypersensitive;
-import nightgames.status.Shamed;
 
 public class NursesGloves extends Skill {
     public NursesGloves(Character self) {
@@ -67,8 +62,9 @@ public class NursesGloves extends Skill {
     @Override
     public String receive(Combat c, int damage, Result modifier, Character target) {
         String message;
-        message = "With a lecherous grin on her face, " + getSelf().subject()
-                        + " snaps on a pair of rubber gloves similar to those you would see at the doctor's.";
+        message = String.format("With a lecherous grin on %s face, %s snaps on a pair of"
+                        + " rubber gloves similar to those you would see at the doctor's.",
+                        getSelf().possessivePronoun(), getSelf().subject());
         return message;
     }
 

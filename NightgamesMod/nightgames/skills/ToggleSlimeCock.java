@@ -1,15 +1,15 @@
 package nightgames.skills;
 
+import nightgames.characters.Attribute;
 import nightgames.characters.Character;
-import nightgames.characters.Trait;
 import nightgames.characters.body.BasicCockPart;
-import nightgames.characters.body.BodyPart;
 import nightgames.characters.body.CockMod;
 import nightgames.characters.body.ModdedCockPart;
 import nightgames.combat.Combat;
 import nightgames.combat.Result;
 import nightgames.global.Global;
 import nightgames.items.clothing.ClothingSlot;
+import nightgames.status.Stsflag;
 
 public class ToggleSlimeCock extends Skill {
 
@@ -19,7 +19,7 @@ public class ToggleSlimeCock extends Skill {
 
     @Override
     public boolean requirements(Combat c, Character user, Character target) {
-        return user.has(Trait.slime);
+        return getSelf().get(Attribute.Slime) > 14;
     }
 
     @Override
@@ -57,16 +57,19 @@ public class ToggleSlimeCock extends Skill {
                 msg += "the bulge in {self:possessive} " + getSelf().outfit.getTopOfSlot(ClothingSlot.bottom).getName()
                                 + " shrinks considerably.";
             }
-            getSelf().body.removeAll("cock");
+            getSelf().body.removeTemporaryParts("cock");
         } else {
             if (getSelf().human() || getSelf().crotchAvailable()) {
                 msg += "a thick, slimy cock forms between {self:possessive} legs.";
             } else {
                 msg += "a sizable bulge forms in " + getSelf().outfit.getTopOfSlot(ClothingSlot.bottom).getName() + ".";
             }
-            getSelf().body.addReplace(new ModdedCockPart(BasicCockPart.big, CockMod.slimy), 1);
+            getSelf().body.temporaryAddOrReplacePartWithType(new ModdedCockPart(BasicCockPart.big, CockMod.slimy), 100);
         }
-        c.write(getSelf(), Global.format(msg, getSelf(), target));
+        if (!target.human() || !target.is(Stsflag.blinded))
+            c.write(getSelf(), Global.format(msg, getSelf(), target));
+        else 
+            printBlinded(c);
         return true;
     }
 
@@ -91,6 +94,6 @@ public class ToggleSlimeCock extends Skill {
     }
 
     private boolean hasSlimeCock() {
-        return getSelf().hasDick() && getSelf().body.getRandomCock().getMod().equals(CockMod.slimy);
+        return getSelf().hasDick() && getSelf().body.getRandomCock().moddedPartCountsAs(getSelf(), CockMod.slimy);
     }
 }

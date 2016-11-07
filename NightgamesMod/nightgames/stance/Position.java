@@ -60,6 +60,8 @@ public abstract class Position implements Cloneable {
         return 0;
     }
 
+    public abstract int distance();
+
     public abstract String describe();
 
     public abstract boolean mobile(Character c);
@@ -246,7 +248,7 @@ public abstract class Position implements Cloneable {
 
     public boolean vaginallyPenetrated(Character c) {
         List<BodyPart> parts = partsFor(c);
-        return BodyPart.hasType(parts, "pussy") || c.is(Stsflag.fucked);
+        return (BodyPart.hasType(parts, "pussy") && inserted()) || c.is(Stsflag.fucked);
     }
 
     public boolean havingSexOtherNoStrapped(Character c) {
@@ -283,8 +285,8 @@ public abstract class Position implements Cloneable {
         }
         List<BodyPart> parts = partsFor(self);
         List<BodyPart> otherParts = partsFor(other);
-        return BodyPart.hasType(parts, "ass")
-                        && (BodyPart.hasType(otherParts, "cock") || BodyPart.hasType(otherParts, "strapon"));
+        return (BodyPart.hasType(parts, "ass")
+                        && (BodyPart.hasType(otherParts, "cock") || BodyPart.hasType(otherParts, "strapon"))) && inserted();
     }
 
     public boolean connected() {
@@ -300,5 +302,16 @@ public abstract class Position implements Cloneable {
      */
     public double pheromoneMod(Character self) {
         return 1;
+    }
+    
+    /**
+     * @return how dominant the dominant character is. positive for more dominant, negative for less.
+     */
+    public int dominance() {
+        return 0;
+    }
+
+    public String name() {
+        return getClass().getSimpleName();
     }
 }

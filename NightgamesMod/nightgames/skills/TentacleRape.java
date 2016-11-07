@@ -47,52 +47,37 @@ public class TentacleRape extends Skill {
             if (target.mostlyNude()) {
                 int m = 2 + Global.random(4);
                 if (target.bound()) {
-                    if (getSelf().human()) {
-                        c.write(getSelf(), deal(c, 0, Result.special, target));
-                    } else if (target.human()) {
-                        c.write(getSelf(), receive(c, 0, Result.special, target));
-                    }
+                    writeOutput(c, Result.special, target);
                     if (target.hasDick()) {
-                        target.body.pleasure(getSelf(), tentacles, target.body.getRandom("cock"), m, c);
+                        target.body.pleasure(getSelf(), tentacles, target.body.getRandom("cock"), m, c, this);
                         m = 2 + Global.random(4);
                     }
                     if (target.hasPussy()) {
-                        target.body.pleasure(getSelf(), tentacles, target.body.getRandom("pussy"), m, c);
+                        target.body.pleasure(getSelf(), tentacles, target.body.getRandom("pussy"), m, c, this);
                         m = 2 + Global.random(4);
                     }
                     if (target.hasBreasts()) {
-                        target.body.pleasure(getSelf(), tentacles, target.body.getRandom("breasts"), m, c);
+                        target.body.pleasure(getSelf(), tentacles, target.body.getRandom("breasts"), m, c, this);
                         m = 2 + Global.random(4);
                     }
                     if (target.body.has("ass")) {
-                        target.body.pleasure(getSelf(), tentacles, target.body.getRandom("ass"), m, c);
+                        target.body.pleasure(getSelf(), tentacles, target.body.getRandom("ass"), m, c, this);
                         target.emote(Emotion.horny, 10);
                     }
-                } else if (getSelf().human()) {
-                    c.write(getSelf(), deal(c, 0, Result.normal, target));
-                    target.body.pleasure(getSelf(), tentacles, target.body.getRandom("skin"), m, c);
-                } else if (target.human()) {
-                    c.write(getSelf(), receive(c, 0, Result.normal, target));
-                    target.body.pleasure(getSelf(), tentacles, target.body.getRandom("skin"), m, c);
+                } else {
+                    writeOutput(c, Result.normal, target);
+                    target.body.pleasure(getSelf(), tentacles, target.body.getRandom("skin"), m, c, this);
                 }
                 if (!target.is(Stsflag.oiled)) {
                     target.add(c, new Oiled(target));
                 }
                 target.emote(Emotion.horny, 20);
             } else {
-                if (getSelf().human()) {
-                    c.write(getSelf(), deal(c, 0, Result.weak, target));
-                } else if (target.human()) {
-                    c.write(getSelf(), receive(c, 0, Result.weak, target));
-                }
+                writeOutput(c, Result.weak, target);
             }
             target.add(c, new Bound(target, Math.min(10 + 3 * getSelf().get(Attribute.Fetish), 50), "tentacles"));
         } else {
-            if (getSelf().human()) {
-                c.write(getSelf(), deal(c, 0, Result.miss, target));
-            } else if (target.human()) {
-                c.write(getSelf(), receive(c, 0, Result.miss, target));
-            }
+            writeOutput(c, Result.miss, target);
             return false;
         }
         return true;
@@ -128,18 +113,26 @@ public class TentacleRape extends Skill {
     @Override
     public String receive(Combat c, int damage, Result modifier, Character target) {
         if (modifier == Result.miss) {
-            return getSelf().name() + " shoots her " + tentacles.describe(getSelf())
-                            + " forward at you. You're barely able to avoid them.";
+            return String.format("%s shoots %s %s forward at %s. %s barely able to avoid them.",
+                            getSelf().subject(), getSelf().possessivePronoun(),
+                            tentacles.describe(getSelf()), target.nameDirectObject(), 
+                            Global.capitalizeFirstLetter(target.subjectAction("are", "is")));
         } else if (modifier == Result.weak) {
-            return getSelf().name() + " shoots her " + tentacles.describe(getSelf())
-                            + " forward at you, entangling your arms and legs.";
+            return String.format("%s shoots %s %s forward at %s, entangling %s arms and legs.",
+                            getSelf().subject(), getSelf().possessivePronoun(), tentacles.describe(getSelf()),
+                            target.nameDirectObject(), target.possessivePronoun());
         } else if (modifier == Result.normal) {
-            return getSelf().name() + " shoots her " + tentacles.describe(getSelf())
-                            + " forward at you, entangling your arms and legs. The slimy appendages "
-                            + "wriggle over your body and coat you in the slippery liquid.";
+            return String.format("%s shoots %s %s forward at %s, "
+                            + "entangling %s arms and legs. The slimy appendages "
+                            + "wriggle over %s body and coat %s in the slippery liquid.",
+                            getSelf().subject(), getSelf().possessivePronoun(), tentacles.describe(getSelf()),
+                            target.nameDirectObject(), target.possessivePronoun(),
+                            target.nameOrPossessivePronoun(), target.directObject());
         } else {
-            return getSelf().name() + "'s " + tentacles.describe(getSelf())
-                            + " cover your helpless body, tease your genitals, and probe your ass.";
+            return String.format("%s %s cover %s helpless body, tease %s genitals, and probe %s ass.",
+                            getSelf().nameOrPossessivePronoun(), tentacles.describe(getSelf()),
+                            target.nameOrPossessivePronoun(), target.possessivePronoun(),
+                            target.possessivePronoun());
         }
     }
 

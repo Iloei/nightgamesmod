@@ -1,6 +1,6 @@
 package nightgames.status;
 
-import org.json.simple.JSONObject;
+import com.google.gson.JsonObject;
 
 import nightgames.characters.Attribute;
 import nightgames.characters.Character;
@@ -10,7 +10,7 @@ import nightgames.combat.Combat;
 
 public class Winded extends DurationStatus {
     public Winded(Character affected) {
-        this(affected, 2);
+        this(affected, 3);
     }
 
     public Winded(Character affected, int duration) {
@@ -49,7 +49,11 @@ public class Winded extends DurationStatus {
 
     @Override
     public void onRemove(Combat c, Character other) {
-        affected.addlist.add(new Braced(affected));
+        if (affected.get(Attribute.Divinity) > 0) {
+            affected.addlist.add(new BastionOfFaith(affected));
+        } else {
+            affected.addlist.add(new Braced(affected));
+        }
         affected.addlist.add(new Wary(affected, 3));
         affected.heal(c, affected.getStamina().max());
     }
@@ -69,7 +73,7 @@ public class Winded extends DurationStatus {
 
     @Override
     public double pleasure(Combat c, BodyPart withPart, BodyPart targetPart, double x) {
-        return 0;
+        return -x / 2;
     }
 
     @Override
@@ -117,16 +121,15 @@ public class Winded extends DurationStatus {
         return new Winded(newAffected);
     }
 
-    @Override
-    @SuppressWarnings("unchecked")
-    public JSONObject saveToJSON() {
-        JSONObject obj = new JSONObject();
-        obj.put("type", getClass().getSimpleName());
+    @Override public JsonObject saveToJson() {
+        JsonObject obj = new JsonObject();
+        obj.addProperty("type", getClass().getSimpleName());
         return obj;
     }
 
-    @Override
-    public Status loadFromJSON(JSONObject obj) {
-        return new Winded(null);
+    @Override public Status loadFromJson(JsonObject obj) {
+        //Winded constructor can't handle nulls
+        throw new UnsupportedOperationException();
+        //return new Winded(null);
     }
 }

@@ -1,5 +1,9 @@
 package nightgames.stance;
 
+import nightgames.global.Global;
+import nightgames.nskills.tags.BothRequirementSkillTag;
+import nightgames.nskills.tags.SkillTag;
+
 public enum Stance {
     behind,
     cowgirl,
@@ -19,10 +23,15 @@ public enum Stance {
     behindfootjob,
     nursing,
     facesitting,
+    smothering,
     engulfed,
     oralpin,
     flowertrap,
     coiled,
     upsidedownmaledom,
-    upsidedownfemdom,
+    upsidedownfemdom, kneeling,;
+
+    public SkillTag getSkillTag() {
+        return new BothRequirementSkillTag((result, value) -> result.getCombat().getStance().en == this, Global.capitalizeFirstLetter(name())+"Position");
+    }
 }

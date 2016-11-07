@@ -2,13 +2,17 @@ package nightgames.skills;
 
 import nightgames.characters.Attribute;
 import nightgames.characters.Character;
+import nightgames.characters.Player;
 import nightgames.characters.Trait;
 import nightgames.characters.body.BodyPart;
 import nightgames.combat.Combat;
 import nightgames.combat.Result;
 import nightgames.global.Global;
+import nightgames.nskills.tags.SkillTag;
 import nightgames.stance.Stance;
 import nightgames.status.BodyFetish;
+import nightgames.status.addiction.Addiction;
+import nightgames.status.addiction.AddictionType;
 
 public class Thrust extends Skill {
     public Thrust(String name, Character self) {
@@ -17,6 +21,7 @@ public class Thrust extends Skill {
 
     public Thrust(Character self) {
         super("Thrust", self);
+        addTag(SkillTag.pleasureSelf);
     }
 
     @Override
@@ -57,14 +62,28 @@ public class Thrust extends Skill {
         if (c.getStance().anallyPenetrated(target) && getSelf().has(Trait.assmaster)) {
             m *= 1.5;
         }
-
+        
         float mt = Math.max(1, m / 3.f);
 
         if (getSelf().has(Trait.experienced)) {
             mt = Math.max(1, mt * .66f);
         }
-        mt = target.modRecoilPleasure(mt);
+        mt = target.modRecoilPleasure(c, mt);
 
+        if (getSelf().human() || target.human()) {
+            Player p = Global.getPlayer();
+            Character npc = c.getOther(p);
+            if (p.checkAddiction(AddictionType.BREEDER, npc)) {
+                float bonus = .3f * p.getAddiction(AddictionType.BREEDER).map(Addiction::getCombatSeverity)
+                                .map(Enum::ordinal).orElse(0);
+                if (p == getSelf()) {
+                    mt += mt * bonus;
+                } else {
+                    m += m * bonus;                    
+                }
+            }
+        }
+        
         results[0] = m;
         results[1] = (int) mt;
 
@@ -84,20 +103,17 @@ public class Thrust extends Skill {
             result = Result.normal;
         }
 
-        if (getSelf().human()) {
-            c.write(getSelf(), deal(c, 0, result, target));
-        } else if (target.human()) {
-            c.write(getSelf(), receive(c, 0, result, target));
-        }
+
+        writeOutput(c, result, target);
 
         int[] m = getDamage(c, target);
         assert m.length >= 2;
 
         if (m[0] != 0) {
-            target.body.pleasure(getSelf(), selfO, targetO, m[0], c);
+            target.body.pleasure(getSelf(), selfO, targetO, m[0], c, this);
         }
         if (m[1] != 0) {
-            getSelf().body.pleasure(target, targetO, selfO, m[1], c);
+            getSelf().body.pleasure(target, targetO, selfO, m[1], c, this);
         }
         if (selfO.isType("ass") && Global.random(100) < 2 + getSelf().get(Attribute.Fetish)) {
             target.add(c, new BodyFetish(target, getSelf(), "ass", .25));
@@ -127,7 +143,7 @@ public class Thrust extends Skill {
         } else if (modifier == Result.reverse) {
             return Global.format(
                             "You rock your hips against {other:direct-object}, riding her smoothly. "
-                                            + "Despite the slow place, {other:subject} soon starts gasping and mewing with pleasure.",
+                                            + "Despite the slow pace, {other:subject} soon starts gasping and mewing with pleasure.",
                             getSelf(), target);
         } else {
             return "You thrust into " + target.name()
@@ -139,25 +155,37 @@ public class Thrust extends Skill {
     @Override
     public String receive(Combat c, int damage, Result modifier, Character target) {
         if (modifier == Result.anal) {
+            String res;
             if (getSelf().has(Trait.strapped)) {
-                String res = getSelf().name()
-                                + " thrusts her hips, pumping her artificial cock in and out of your ass and pushing on your prostate.";
-                if (getSelf().has(Trait.assmaster)) {
-                    return res + getSelf().name()
-                                    + "'s penchant for fucking people in the ass makes her thrusting that much more powerful, and that much more intense for the both of you.";
-                }
-                return res;
+                res = String.format("%s thrusts her hips, pumping her artificial cock in and out"
+                                + " of %s ass and pushing on %s %s.", getSelf().subject(),
+                                target.nameOrPossessivePronoun(), target.possessivePronoun(),
+                                target.hasBalls() ? "prostate" : "innermost parts");
+                
             } else {
-                return getSelf().name() + "'s cock slowly pumps the inside of your rectum.";
+                res = String.format("%s cock slowly pumps the inside of %s rectum.",
+                                getSelf().nameOrPossessivePronoun(), target.nameOrPossessivePronoun());
             }
+            if (getSelf().has(Trait.assmaster)) {
+                res += String.format(" %s penchant for fucking people in the ass makes "
+                                + "%s thrusting that much more powerful, and that much more "
+                                + "intense for the both of %s.", getSelf().nameOrPossessivePronoun(),
+                                getSelf().possessivePronoun(),
+                                c.bothDirectObject());
+            }
+            return res;
         } else if (modifier == Result.reverse) {
-            return getSelf().name()
-                            + " rocks her hips against you, riding you smoothly and deliberately. Despite the slow pace, the sensation of her hot "
-                            + getSelfOrgan(c).fullDescribe(getSelf()) + " surrounding "
-                            + "your dick is gradually driving you to your limit.";
+            return String.format("%s rocks %s hips against %s, riding %s smoothly and deliberately. "
+                            + "Despite the slow pace, the sensation of %s hot %s surrounding "
+                            + "%s dick is gradually driving %s to %s limit.", getSelf().subject(),
+                            getSelf().possessivePronoun(), target.nameDirectObject(),
+                            target.directObject(), getSelf().nameOrPossessivePronoun(),
+                            getSelfOrgan(c).fullDescribe(getSelf()),
+                            target.nameOrPossessivePronoun(), target.directObject(),
+                            target.possessivePronoun());
         } else {
             return Global.format(
-                            "{self:subject} thrusts into {other:name-possessive} {other:body-part:pussy} in a slow steady rhythm, leaving you gasping.",
+                            "{self:subject} thrusts into {other:name-possessive} {other:body-part:pussy} in a slow steady rhythm, leaving {other:direct-object} gasping.",
                             getSelf(), target);
         }
     }
@@ -179,5 +207,10 @@ public class Thrust extends Skill {
     @Override
     public boolean makesContact() {
         return true;
+    }
+    
+    @Override
+    public Stage getStage() {
+        return Stage.FINISHER;
     }
 }

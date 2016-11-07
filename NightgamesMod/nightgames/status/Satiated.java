@@ -1,12 +1,11 @@
 package nightgames.status;
 
-import org.json.simple.JSONObject;
+import com.google.gson.JsonObject;
 
 import nightgames.characters.Attribute;
 import nightgames.characters.Character;
 import nightgames.characters.body.BodyPart;
 import nightgames.combat.Combat;
-import nightgames.global.JSONUtils;
 
 public class Satiated extends DurationStatus {
     int value;
@@ -26,7 +25,8 @@ public class Satiated extends DurationStatus {
         if (affected.human()) {
             return "You feel immensely powerful after feeding on your opponent's essence\n";
         } else {
-            return affected.name() + " feels immensely satisfied after feeding on your essence\n";
+            return affected.name() + " feels immensely satisfied after feeding on "+
+                            c.getOther(affected).nameOrPossessivePronoun()+" essence\n";
         }
     }
 
@@ -100,17 +100,14 @@ public class Satiated extends DurationStatus {
         return new Satiated(newAffected, value);
     }
 
-    @Override
-    @SuppressWarnings("unchecked")
-    public JSONObject saveToJSON() {
-        JSONObject obj = new JSONObject();
-        obj.put("type", getClass().getSimpleName());
-        obj.put("value", value);
+    @Override  public JsonObject saveToJson() {
+        JsonObject obj = new JsonObject();
+        obj.addProperty("type", getClass().getSimpleName());
+        obj.addProperty("value", value);
         return obj;
     }
 
-    @Override
-    public Status loadFromJSON(JSONObject obj) {
-        return new Satiated(null, JSONUtils.readInteger(obj, "value"));
+    @Override public Status loadFromJson(JsonObject obj) {
+        return new Satiated(null, obj.get("value").getAsInt());
     }
 }

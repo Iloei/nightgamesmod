@@ -1,6 +1,6 @@
 package nightgames.characters.body;
 
-import org.json.simple.JSONObject;
+import com.google.gson.JsonObject;
 
 import nightgames.characters.Attribute;
 import nightgames.characters.Character;
@@ -9,6 +9,7 @@ import nightgames.combat.Combat;
 import nightgames.global.Global;
 import nightgames.items.clothing.ClothingSlot;
 import nightgames.items.clothing.ClothingTrait;
+import nightgames.json.JsonUtils;
 
 public class GenericBodyPart implements BodyPart {
     /**
@@ -45,6 +46,15 @@ public class GenericBodyPart implements BodyPart {
         this(desc, "", hotness, pleasure, sensitivity, notable, type, prefix);
     }
 
+    public GenericBodyPart(GenericBodyPart original) {
+        this(original.desc, original.descLong, original.hotness, original.pleasure, original.sensitivity,
+                        original.notable, original.type, original.prefix);
+    }
+
+    public GenericBodyPart() {
+        this("generic", "a generic body part", 0, 0, 0, false, "generic", "");
+    }
+
     @Override
     public void describeLong(StringBuilder b, Character c) {
         String parsedDesc = Global.format(descLong, c, c);
@@ -53,7 +63,7 @@ public class GenericBodyPart implements BodyPart {
 
     @Override
     public boolean isType(String type) {
-        return this.type.equalsIgnoreCase(type);
+        return this.getType().equalsIgnoreCase(type);
     }
 
     @Override
@@ -100,7 +110,7 @@ public class GenericBodyPart implements BodyPart {
             pleasureMod += self.has(Trait.dexterous) ? .4 : 0;
         }
         if (type.equals("hands")) {
-            pleasureMod += self.has(Trait.pimphand) ? .5 : 0;
+            pleasureMod += self.has(Trait.pimphand) ? .2 : 0;
         }
         return pleasureMod;
     }
@@ -116,8 +126,12 @@ public class GenericBodyPart implements BodyPart {
     }
 
     @Override
-    public boolean equals(Object other) // com.instantiations.assist.eclipse.analysis.audit.rule.effectivejava.obeyEqualsContract.obeyGeneralContractOfEquals
+    public boolean equals(Object other)
     {
+        if (other == null)
+            return false;
+        if (!(other instanceof GenericBodyPart))
+            return false;
         return toString().equals(other.toString());
     }
 
@@ -126,47 +140,20 @@ public class GenericBodyPart implements BodyPart {
         return (type + ":" + toString()).hashCode();
     }
 
-    @SuppressWarnings("unchecked")
-    public JSONObject saveToDict() {
-        JSONObject res = new JSONObject();
-        res.put("desc", desc);
-        res.put("descLong", descLong);
-        res.put("hotness", hotness);
-        res.put("pleasure", pleasure);
-        res.put("sensitivity", sensitivity);
-        res.put("notable", notable);
-        res.put("type", type);
-        res.put("prefix", prefix);
-
-        return res;
+    public JsonObject toJson() {
+        return JsonUtils.gson.toJsonTree(this, this.getClass()).getAsJsonObject();
     }
 
-    @SuppressWarnings("unchecked")
-    public BodyPart loadFromDict(JSONObject dict) {
-        try {
-            // newly added field
-            if (!dict.containsKey("generic")) {
-                dict.put("generic", true);
-            }
-            GenericBodyPart part = new GenericBodyPart((String) dict.get("desc"), (String) dict.get("descLong"),
-                            ((Number) dict.get("hotness")).doubleValue(), ((Number) dict.get("pleasure")).doubleValue(),
-                            ((Number) dict.get("sensitivity")).doubleValue(), (Boolean) dict.get("notable"),
-                            (String) dict.get("type"), (String) dict.get("prefix"));
-            return part;
-        } catch (ClassCastException e) {
-            System.err.println(e.getMessage());
-        }
-        return null;
+    public BodyPart fromJson(JsonObject object) {
+        return JsonUtils.gson.fromJson(object, this.getClass());
     }
 
-    @Override
-    public JSONObject save() {
-        return saveToDict();
+    @Override public JsonObject save() {
+        return toJson();
     }
 
-    @Override
-    public BodyPart load(JSONObject obj) {
-        return loadFromDict(obj);
+    @Override public BodyPart load(JsonObject obj) {
+        return fromJson(obj);
     }
 
     @Override
@@ -175,12 +162,24 @@ public class GenericBodyPart implements BodyPart {
         if (self.has(ClothingTrait.nursegloves) && type.equals("hands")) {
             c.write(self, Global
                             .format("{self:name-possessive} rubber gloves provide an unique sensation as {self:subject-action:run|runs} {self:possessive} hands over {other:possessive} "
-                                            + target.describe(opponent), self, opponent));
+                                            + target.describe(opponent) + ".", self, opponent));
             bonus += 5 + Global.random(5);
             if (Global.random(5) == 0) {
                 c.write(self, "Unfortunately, the gloves wear out with their usage.");
-                self.shred(ClothingSlot.hands);
+                self.shred(ClothingSlot.arms);
             }
+        }
+        if (type.equals("hands") && self.has(Trait.defthands)) {
+            c.write(self, Global
+                            .format("{self:name-possessive} hands dance across {other:possessive} "
+                                            + target.describe(opponent) + ", hitting all the right spots.", self, opponent));
+            bonus += Global.random(2, 6);
+        }
+        if (type.equals("feet") && self.has(Trait.nimbletoes)) {
+            c.write(self, Global
+                            .format("{self:name-possessive} nimble toes adeptly massage {other:possessive} "
+                                            + target.describe(opponent) + " elicting a quiet gasp.", self, opponent));
+            bonus += Global.random(2, 6);
         }
         return bonus;
     }
@@ -247,12 +246,12 @@ public class GenericBodyPart implements BodyPart {
     }
 
     @Override
-    public int counterValue(BodyPart other) {
+    public int counterValue(BodyPart otherPart, Character self, Character other) {
         return 0;
     }
 
     @Override
-    public BodyPartMod getMod() {
+    public BodyPartMod getMod(Character self) {
         return BodyPartMod.noMod;
     }
 }

@@ -16,6 +16,7 @@ import nightgames.characters.State;
 import nightgames.characters.Trait;
 import nightgames.modifier.Modifier;
 import nightgames.status.BodyFetish;
+import nightgames.status.addiction.Addiction;
 
 public class Match {
     protected int time;
@@ -36,14 +37,15 @@ public class Match {
         matchData = new MatchData(combatants);
         score = new HashMap<Character, Integer>();
         this.condition = condition;
+        map = Global.buildMap();
         for (Character combatant : combatants) {
             score.put(combatant, 0);
             Global.gui().message(Global.gainSkills(combatant));
             Global.learnSkills(combatant);
+            combatant.matchPrep(this);
         }
         time = 0;
         dropOffTime = 0;
-        map = Global.buildMap();
         pause = false;
         Deque<Area> areaList = new ArrayDeque<>();
         areaList.add(map.get("Dorm"));
@@ -156,10 +158,10 @@ public class Match {
                 }
             }
             for (Challenge c : combatant.challenges) {
-                if (c.done) {
-                    combatant.modMoney(c.reward());
-                    if (combatant.human()) {
-                        creward += c.reward();
+            	if(c.done){
+                    combatant.money+=c.reward()+(c.reward()*3*combatant.getRank());
+                    if(combatant.human()){
+                        creward += c.reward()+(c.reward()*3*combatant.getRank());
                     }
                 }
             }
@@ -223,9 +225,7 @@ public class Match {
                 character.add(Trait.masterheels);
             }
         }
-        if (Global.checkFlag(Flag.autosave)) {
-            Global.save(true);
-        }
+        Global.getPlayer().getAddictions().forEach(Addiction::endNight);
         new Postmatch(Global.getPlayer(), combatants);
     }
 
@@ -264,6 +264,9 @@ public class Match {
         condition.handleItems(player);
         condition.handleStatus(player);
         condition.handleTurn(player, this);
+        if (player.human()) {
+            Global.getPlayer().getAddictions().forEach(Addiction::refreshWithdrawal);
+        }
     }
 
     public int meanLvl() {
@@ -316,7 +319,11 @@ public class Match {
     public Collection<Area> getAreas() {
         return map.values();
     }
-
+    
+    public String genericRoomDescription() {
+        return "room";
+    }
+    
     public MatchData getMatchData() {
         return matchData;
     }

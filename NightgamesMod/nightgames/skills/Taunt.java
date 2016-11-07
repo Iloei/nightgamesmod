@@ -27,24 +27,25 @@ public class Taunt extends Skill {
 
     @Override
     public boolean resolve(Combat c, Character target) {
-        if (getSelf().human()) {
-            c.write(getSelf(), deal(c, 0, Result.normal, target));
-        } else if (target.human()) {
-            c.write(getSelf(), receive(c, 0, Result.normal, target));
-        }
-        double m = (6 + Global.random(4) + getSelf().body.getHotness(getSelf(), target))
-                        * Math.min(2, 1 + getSelf().getExposure());
+        writeOutput(c, Result.normal, target);
+        double m = (6 + Global.random(4) + getSelf().body.getHotness(getSelf(), target)) / 3
+                        * Math.min(2, 1 + target.getExposure());
+        double chance = .25;
         if (target.has(Trait.imagination)) {
             m += 4;
-            target.tempt(c, getSelf(), (int) Math.round(m));
-            if (Global.random(4) >= 1) {
-                target.add(c, new Shamed(target));
-            }
-        } else {
-            target.tempt(c, getSelf(), (int) Math.round(m));
-            if (Global.random(4) >= 2) {
-                target.add(c, new Shamed(target));
-            }
+            chance += .25;
+        } 
+        if (getSelf().has(Trait.bitingwords)) {
+            m += 4;
+            chance += .25;
+        } 
+        target.tempt(c, getSelf(), (int) Math.round(m));
+        if (Global.randomdouble() < chance) {
+            target.add(c, new Shamed(target));
+        }
+        if (c.getStance().dom(getSelf()) && getSelf().has(Trait.bitingwords)) {
+            int willpowerLoss = Math.max(target.getWillpower().max() / 50, 3) + Global.random(3);
+            target.loseWillpower(c, willpowerLoss, 0, false, " (Biting Words)");
         }
         target.emote(Emotion.angry, 30);
         target.emote(Emotion.nervous, 15);

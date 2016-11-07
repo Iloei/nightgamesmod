@@ -1,6 +1,6 @@
 package nightgames.status;
 
-import org.json.simple.JSONObject;
+import com.google.gson.JsonObject;
 
 import nightgames.characters.Attribute;
 import nightgames.characters.Character;
@@ -18,7 +18,7 @@ public class Cynical extends DurationStatus {
         if (affected.human()) {
             return "You're feeling more cynical than usual and won't fall for any mind games.";
         } else {
-            return affected.name() + " has a cynical edge in her eyes.";
+            return affected.name() + " has a cynical edge in "+affected.possessivePronoun()+" eyes.";
         }
     }
 
@@ -69,7 +69,7 @@ public class Cynical extends DurationStatus {
 
     @Override
     public int gainmojo(int x) {
-        return -x;
+        return -x/4;
     }
 
     @Override
@@ -92,16 +92,13 @@ public class Cynical extends DurationStatus {
         return new Cynical(newAffected);
     }
 
-    @Override
-    @SuppressWarnings("unchecked")
-    public JSONObject saveToJSON() {
-        JSONObject obj = new JSONObject();
-        obj.put("type", getClass().getSimpleName());
+    @Override  public JsonObject saveToJson() {
+        JsonObject obj = new JsonObject();
+        obj.addProperty("type", getClass().getSimpleName());
         return obj;
     }
 
-    @Override
-    public Status loadFromJSON(JSONObject obj) {
+    @Override public Status loadFromJson(JsonObject obj) {
         return new Cynical(null);
     }
 }

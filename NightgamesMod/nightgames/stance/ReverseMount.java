@@ -13,7 +13,8 @@ public class ReverseMount extends AbstractBehindStance {
         if (top.human()) {
             return "You are straddling " + bottom.name() + ", with your back to her.";
         } else {
-            return top.name() + " is sitting on your chest, facing your groin.";
+            return String.format("%s is sitting on %s chest, facing %s groin.",
+                            top.subject(), bottom.nameOrPossessivePronoun(), bottom.possessivePronoun());
         }
     }
 
@@ -89,5 +90,15 @@ public class ReverseMount extends AbstractBehindStance {
     @Override
     public double pheromoneMod(Character self) {
         return 2;
+    }
+    
+    @Override
+    public int dominance() {
+        return 2;
+    }
+    
+    @Override
+    public int distance() {
+        return 1;
     }
 }

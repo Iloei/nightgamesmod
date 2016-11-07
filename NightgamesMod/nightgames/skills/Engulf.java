@@ -3,17 +3,19 @@ package nightgames.skills;
 import nightgames.characters.Attribute;
 import nightgames.characters.Character;
 import nightgames.characters.Emotion;
-import nightgames.characters.Trait;
 import nightgames.combat.Combat;
 import nightgames.combat.Result;
 import nightgames.global.Global;
+import nightgames.nskills.tags.SkillTag;
 import nightgames.stance.Engulfed;
 import nightgames.stance.Stance;
-import nightgames.status.Bound;
 
 public class Engulf extends CounterBase {
     public Engulf(Character self) {
         super("Engulf", self, 5, counterDesc(self), 2);
+        addTag(SkillTag.counter);
+        addTag(SkillTag.fucking);
+        addTag(SkillTag.positioning);
     }
 
     private static String counterDesc(Character self) {
@@ -31,7 +33,7 @@ public class Engulf extends CounterBase {
 
     @Override
     public boolean requirements(Combat c, Character user, Character target) {
-        return user.has(Trait.slime);
+        return getSelf().get(Attribute.Slime) > 19;
     }
 
     @Override
@@ -52,7 +54,7 @@ public class Engulf extends CounterBase {
     @Override
     public String getBlockedString(Combat c, Character target) {
         return Global.format(
-                        "{self:SUBJECT-ACTION:move:moves} to engulf {other:subject} "
+                        "{self:SUBJECT-ACTION:move|moves} to engulf {other:subject} "
                                         + "in {self:possessive} slime, but {other:pronoun} stays out of {self:possessive} reach.",
                         getSelf(), target);
     }
@@ -74,28 +76,17 @@ public class Engulf extends CounterBase {
 
     @Override
     public String deal(Combat c, int damage, Result modifier, Character target) {
-        if (modifier == Result.miss) {
-            return Global.format(
-                            "You will your slime to rush at {other:name} and pull her down, but she dodges away at the last second.\n",
-                            getSelf(), target);
-        } else {
-            return Global.format(
-                            "You will your slime to rush at {other:name} and manage to entrap her inside of yourself.\n",
-                            getSelf(), target);
-        }
+        return Global.format(
+                        "You spread out your slime, getting ready to trap {other:name} in it.",
+                        getSelf(), target);
     }
 
     @Override
     public String receive(Combat c, int damage, Result modifier, Character target) {
-        if (modifier == Result.miss) {
-            return Global.format(
-                            "{self:NAME}'s fluid body squirms violently and suddenly rushes at you. You manage to dodge out of the way and avoid being trapped.\n",
-                            getSelf(), target);
-        } else {
-            return Global.format(
-                            "{self:NAME}'s fluid body squirms violently and suddenly rushes at you. You don't react in time, and before you know it, {self:name-possessive} slime firmly locks you in inside {self:direct-object}",
-                            getSelf(), target);
-        }
+        return Global.format(
+                        "{self:NAME}'s body spreads out across the floor. From {self:possessive} lowered position, "
+                        + "{self:pronoun} smiles deviously up at {other:name-do}, goading {other:direct-object} into an attack.",
+                        getSelf(), target);
     }
 
     @Override
@@ -104,7 +95,7 @@ public class Engulf extends CounterBase {
                         + " forward, folding {self:possessive} slime around {other:direct-object}. ";
         if (!target.outfit.isNude()) {
             target.nudify();
-            msg += "{self:name-possessive} slime vibrates wildly around {other:pronoun}, causing"
+            msg += "{self:NAME-POSSESSIVE} slime vibrates wildly around {other:direct-object}, causing"
                             + " {other:possessive} clothes to dissolve without a trace. ";
         }
         msg += "As {self:pronoun} {self:action:reform|reforms} {self:possessive} body around {other:direct-object},"
@@ -117,12 +108,18 @@ public class Engulf extends CounterBase {
         if (target.hasPussy())
             msg += "pussy, ";
         msg += "ass and every other inch of {other:possessive} skin. ";
-        if (getSelf().getType().equals("Airi"))
+        if (getSelf().getType()
+                     .equals("Airi"))
             msg += "\n<i>\"It's done... over... stop struggling... cum.\"</i>";
         c.write(getSelf(), Global.format(msg, getSelf(), target));
-        c.setStance(new Engulfed(getSelf(), target));
+        c.setStance(new Engulfed(getSelf(), target), getSelf(), true);
         getSelf().emote(Emotion.dominant, 50);
         getSelf().emote(Emotion.horny, 30);
         target.emote(Emotion.nervous, 50);
+    }
+    
+    @Override
+    public Stage getStage() {
+        return Stage.FINISHER;
     }
 }

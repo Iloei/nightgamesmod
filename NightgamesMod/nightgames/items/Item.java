@@ -19,12 +19,12 @@ import nightgames.combat.Combat;
 import nightgames.global.Global;
 import nightgames.status.Abuff;
 import nightgames.status.Alluring;
-import nightgames.status.InducedEuphoria;
 import nightgames.status.Distorted;
 import nightgames.status.Energized;
 import nightgames.status.FluidAddiction;
 import nightgames.status.Frenzied;
 import nightgames.status.Horny;
+import nightgames.status.InducedEuphoria;
 import nightgames.status.Oiled;
 import nightgames.status.Shamed;
 import nightgames.status.Shield;
@@ -173,7 +173,7 @@ public enum Item implements Loot {
                     Arrays.asList((ItemEffect) new GroupEffect(Arrays.asList(
                                     (ItemEffect) new BuffEffect("drink",
                                                     "throw", new FluidAddiction(Global.noneCharacter(),
-                                                                    Global.noneCharacter(), 10)),
+                                                                    Global.noneCharacter(), 2, 10)),
                                     new ResourceEffect("wprestore", 500)))),
                     10),
     Ward("Dark Ward", 100, "", "a "),
@@ -237,7 +237,10 @@ public enum Item implements Loot {
                     new BuffEffect("drink", "throw", new Abuff(Global.noneCharacter(), Attribute.Seduction, -5, 10)),
                     new AddTraitEffect("drink", "throw", Trait.lacedjuices),
                     new AddTraitEffect("drink", "throw", Trait.aikidoNovice)), 10),
-    Flag("Flag", 0, "A small red ribbon. Worth points.", "The ");
+    Flag("Flag", 0, "A small red ribbon. Worth points.", "The "),
+    Blindfold("Blindfold", 50, "A blindfold one might use to sleep.", "a "),
+    Needle("Drugged Needle", 10, "A thin needle coated in a mixture of aphrodisiacs and sedatives", "a "),
+    SmokeBomb("Smoke Bomb", 20, "For those quick getaways", "a ");
 
     /**
      * The Item's display name.
@@ -293,8 +296,11 @@ public enum Item implements Loot {
         return effect;
     }
 
-    @Override
-    public String getID() {
+    @Override public String getID() {
         return name();
+    }
+
+    public ItemAmount amount(int amount) {
+        return new ItemAmount(this, amount);
     }
 }

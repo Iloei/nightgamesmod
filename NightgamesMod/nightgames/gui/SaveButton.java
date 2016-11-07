@@ -16,6 +16,6 @@ public class SaveButton extends JButton {
     public SaveButton() {
         super("Save");
         setFont(new Font("Baskerville Old Face", 0, 18));
-        addActionListener(arg0 -> Global.save(false));
+        addActionListener(arg0 -> Global.saveWithDialog());
     }
 }

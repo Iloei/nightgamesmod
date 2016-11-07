@@ -1,6 +1,6 @@
 package nightgames.status;
 
-import org.json.simple.JSONObject;
+import com.google.gson.JsonObject;
 
 import nightgames.characters.Attribute;
 import nightgames.characters.Character;
@@ -19,7 +19,8 @@ public class Hypersensitive extends DurationStatus {
         if (affected.human()) {
             return "Your skin tingles and feels extremely sensitive to touch.";
         } else {
-            return "She shivers from the breeze hitting her skin and has goosebumps";
+            return String.format("%s shivers from the breeze hitting %s skin and has goosebumps.",
+                            affected.pronoun(), affected.possessivePronoun());
         }
     }
 
@@ -107,16 +108,13 @@ public class Hypersensitive extends DurationStatus {
         return new Hypersensitive(newAffected);
     }
 
-    @Override
-    @SuppressWarnings("unchecked")
-    public JSONObject saveToJSON() {
-        JSONObject obj = new JSONObject();
-        obj.put("type", getClass().getSimpleName());
+    @Override  public JsonObject saveToJson() {
+        JsonObject obj = new JsonObject();
+        obj.addProperty("type", getClass().getSimpleName());
         return obj;
     }
 
-    @Override
-    public Status loadFromJSON(JSONObject obj) {
+    @Override public Status loadFromJson(JsonObject obj) {
         return new Hypersensitive(null);
     }
 }

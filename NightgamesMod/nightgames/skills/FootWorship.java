@@ -7,13 +7,20 @@ import nightgames.characters.body.BodyPart;
 import nightgames.combat.Combat;
 import nightgames.combat.Result;
 import nightgames.global.Global;
+import nightgames.nskills.tags.SkillTag;
+import nightgames.stance.Kneeling;
 import nightgames.stance.Stance;
-import nightgames.stance.StandingOver;
 import nightgames.status.BodyFetish;
 
 public class FootWorship extends Skill {
     public FootWorship(Character self) {
         super("Foot Worship", self);
+        addTag(SkillTag.pleasure);
+        addTag(SkillTag.worship);
+        addTag(SkillTag.suicidal);
+        addTag(SkillTag.pleasureSelf);
+        addTag(SkillTag.usesMouth);
+        addTag(SkillTag.pleasure);
     }
 
     @Override
@@ -49,16 +56,16 @@ public class FootWorship extends Skill {
             c.write(getSelf(), Global.format(receive(c, 0, Result.normal, target), getSelf(), target));
         }
         if (m > 0) {
-            target.body.pleasure(getSelf(), mouth, feet, m, c);
+            target.body.pleasure(getSelf(), mouth, feet, m, c, this);
             if (mouth.isErogenous()) {
-                getSelf().body.pleasure(getSelf(), feet, mouth, m, c);
+                getSelf().body.pleasure(getSelf(), feet, mouth, m, c, this);
             }
         }
         if (n > 0) {
             target.buildMojo(c, n);
         }
         if (c.getStance().en == Stance.neutral) {
-            c.setStance(new StandingOver(target, getSelf()));
+            c.setStance(new Kneeling(target, getSelf()));
         }
         c.getCombatantData(getSelf()).toggleFlagOn("footworshipped", true);
         return result != Result.miss;
@@ -94,10 +101,18 @@ public class FootWorship extends Skill {
     @Override
     public String receive(Combat c, int damage, Result modifier, Character target) {
         if (!c.getCombatantData(getSelf()).getBooleanFlag("footworshipped")) {
-            return getSelf().name() + " throws herself at your feet. She worshipfully grasps your feet "
-                            + "and start licking between your toes, all while her face displays a mask of ecstasy.";
+            return String.format("%s throws %s at %s feet. %s worshipfully grasps %s feet "
+                            + "and starts licking between %s toes, all while %s face displays a mask of ecstasy.",
+                            getSelf().subject(), getSelf().reflectivePronoun(), target.nameOrPossessivePronoun(),
+                            getSelf().subject(), target.possessivePronoun(), target.possessivePronoun(),
+                            getSelf().possessivePronoun());
         }
-        return "{self:SUBJECT} can't seem to get enough of your feet as {self:pronoun} continues to lick along the bottom of your soles, {self:possessive} face further lost in {self:possessive} servitude as {self:pronoun} is careful not to miss a spot.";
+        return String.format("%s can't seem to get enough of %s feet as %s continues to "
+                        + "lick along the bottom of %s soles, %s face further lost in "
+                        + "servitude as %s is careful not to miss a spot.", getSelf().subject(),
+                        target.nameOrPossessivePronoun(), getSelf().pronoun(),
+                        target.possessivePronoun(), getSelf().possessivePronoun(),
+                        getSelf().pronoun());
     }
 
     @Override

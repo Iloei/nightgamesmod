@@ -1,5 +1,6 @@
 package nightgames.characters;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Optional;
 
@@ -11,11 +12,16 @@ import nightgames.characters.body.FacePart;
 import nightgames.characters.body.MouthPussyPart;
 import nightgames.characters.body.PussyPart;
 import nightgames.combat.Combat;
+import nightgames.combat.CombatScene;
+import nightgames.combat.CombatSceneChoice;
 import nightgames.combat.Result;
 import nightgames.global.Flag;
 import nightgames.global.Global;
 import nightgames.items.Item;
 import nightgames.items.clothing.Clothing;
+import nightgames.skills.strategy.WindUpStrategy;
+import nightgames.skills.strategy.NurseStrategy;
+import nightgames.start.NpcConfiguration;
 import nightgames.status.Energized;
 
 public class Cassie extends BasePersonality {
@@ -23,9 +29,21 @@ public class Cassie extends BasePersonality {
      *
      */
     private static final long serialVersionUID = 8601852023164119671L;
+    private static final String CASSIE_BREAST_FOCUS = "CassieBreastsFocus";
+    private static final String CASSIE_MOUTH_FOCUS = "CassieMouthFocus";
+    private static final String CASSIE_SUBMISSIVE_FOCUS = "CassieSubmissiveFocus";
+    private static final String CASSIE_ENCHANTRESS_FOCUS = "CassieEnchantressFocus";
 
     public Cassie() {
-        super("Cassie", 1);
+        this(Optional.empty(), Optional.empty());
+    }
+
+    public Cassie(Optional<NpcConfiguration> charConfig, Optional<NpcConfiguration> commonConfig) {
+        super("Cassie", 1, charConfig, commonConfig);
+    }
+
+    protected void applyBasicStats() {
+        character.isStartCharacter = true;
         preferredCockMod = CockMod.runic;
         character.outfitPlan.add(Clothing.getByID("bra"));
         character.outfitPlan.add(Clothing.getByID("blouse"));
@@ -39,6 +57,11 @@ public class Cassie extends BasePersonality {
         character.mod(Attribute.Cunning, 1);
         character.mod(Attribute.Perception, 1);
 
+        character.addPersonalStrategy(new WindUpStrategy());
+        character.addPersonalStrategy(new NurseStrategy());
+
+        character.getStamina().setMax(70 + character.getLevel() * getGrowth().stamina);
+        character.getArousal().setMax(100 + character.getLevel() * getGrowth().arousal);
         Global.gainSkills(character);
         character.add(Trait.softheart);
         character.add(Trait.romantic);
@@ -48,8 +71,7 @@ public class Cassie extends BasePersonality {
         character.plan = Plan.hunting;
         character.mood = Emotion.confident;
         character.body.add(BreastsPart.c);
-        character.body.add(PussyPart.normal);
-        character.body.finishBody(CharacterSex.female);
+        character.initialGender = CharacterSex.female;
     }
 
     @Override
@@ -61,34 +83,105 @@ public class Cassie extends BasePersonality {
         growth.bonusStamina = 1;
         growth.bonusArousal = 3;
         growth.bonusMojo = 1;
+
+        character.addCombatScene(new CombatScene((c, self, other) -> {
+            return self.getLevel() >= 10 && !Global.checkFlag(CASSIE_BREAST_FOCUS) && !Global.checkFlag(CASSIE_MOUTH_FOCUS);
+        }, (c, self, player) -> "Before leaving, " + character.getName() + " turns and asks you \"Hey " + player.getName() + ", what turns you on more? Just for the sakes of... science let's say.\"",
+                Arrays.asList(
+                        new CombatSceneChoice("Stare at her breasts", (c, self, other) -> {
+                            c.write("Cassie catches your gaze with her eyes and lightly giggles. \"I knew it, boys are all about boobs right? Hmm I wonder if I can use this to my advantage...\"");
+                            Global.flag(CASSIE_BREAST_FOCUS);
+                            growth.addTrait(11, Trait.lactating);
+                            growth.addTrait(25, Trait.magicmilk);
+                            growth.addTrait(38, Trait.temptingtits);
+                            growth.addTrait(57, Trait.sedativecream);
+                            return true;
+                        }),
+                        new CombatSceneChoice("Stare at her lips", (c, self, other) -> {
+                            c.write("Cassie watches you carefully and catches your gaze sliding towards her succulent pink lips. "
+                                            + "\"Oooooh, do you like how my mouth feels? I'm flattered! Maybe you like kissing? Or... perhaps something a bit more exciting?\"<br/>"
+                                            + "She giggles a bit when your flush reveals your dirty thoughts. \"It's okay " + other.getName() + ", I enjoy it too. Maybe I'll even try a bit harder with it!\"");
+                            Global.flag(CASSIE_MOUTH_FOCUS);
+                            growth.addTrait(11, Trait.experttongue);
+                            growth.addTrait(25, Trait.tongueTraining2);
+                            growth.addTrait(38, Trait.tongueTraining3);
+                            growth.actions.put(57, () -> {
+                                character.body.addReplace(new MouthPussyPart(), 1);
+                            });
+                            return true;
+                        })
+                    )
+                ));
+        character.addCombatScene(new CombatScene((c, self, other) -> {
+            return self.getLevel() >= 20 && !Global.checkFlag(CASSIE_SUBMISSIVE_FOCUS) && !Global.checkFlag(CASSIE_ENCHANTRESS_FOCUS)
+                            && (Global.checkFlag(CASSIE_BREAST_FOCUS) || Global.checkFlag(CASSIE_MOUTH_FOCUS));
+        }, (c, self, player) -> "After you two recover from your afterglow, Cassie turns towards you. \"You know, we've been competing in the games for a while now. I can't believe how much I've changed! "
+                        + "When we just started, I've only gone all the way with a boy once. I barely knew what to do even! Now though...\" Cassie gigles and starts tickling your spent "
+                        + "cock with an conjured arcane feather. \"Hey " + player.getName()+", what do you think? are you disappointed I turned out this way?\"",
+                Arrays.asList(
+                        new CombatSceneChoice("Answer: Liked her old submissiveness more", (c, self, other) -> {
+                            c.write("You reply that you love her new confidence, but you definitely did have a soft spot for her old self that loved to please."
+                                            + "<br/>"
+                                            + "Cassie smiles wryly, \"I thought so. I think I've been trying so hard that I've lost a bit of my true self. "
+                                            + "But you know, it doesn't have to be this way. I think I can try applying some of that in a better way.\" She stands up and gives you a quick kiss on the cheek. "
+                                            + "\"Thank you " +Global.getPlayer().getName() + ", you've really help me make up my mind. But the next time we fight, I definitely wont lose!\"");
+                            Global.flag(CASSIE_SUBMISSIVE_FOCUS);
+                            growth.addTrait(21, Trait.submissive);
+                            if (Global.checkFlag(CASSIE_BREAST_FOCUS)) {
+                                growth.addTrait(28, Trait.augmentedPheromones);
+                            } else if (Global.checkFlag(CASSIE_MOUTH_FOCUS)) {
+                                growth.addTrait(28, Trait.sweetlips);
+                            }
+                            growth.addTrait(32, Trait.addictivefluids);
+                            growth.addTrait(43, Trait.dickhandler);
+                            growth.addTrait(47, Trait.autonomousPussy);
+                            growth.addTrait(60, Trait.obsequiousAppeal);
+                            preferredAttributes.add(character -> character.get(Attribute.Submissive) < 20 ? Optional.of(Attribute.Submissive) : Optional.empty());
+                            return true;
+                        }),
+                        new CombatSceneChoice("Answer: Like her new assertive self more", (c, self, other) -> {
+                            c.write("You reply that you love her magic and new her confident self. Falling into her eyes is a real turn on for you."
+                                            + "<br/>"
+                                            + "Cassie's eyes widen briefly before cracking into a wide smile, \""+ Global.getPlayer().getName() + ", I didn't realize you were a sub! "
+                                                            + "Do you like being helpless? "
+                                                            + "Does it excite you when you are under my control, doing my bidding? I think I can work with that...\"");
+                            Global.flag(CASSIE_ENCHANTRESS_FOCUS);
+                            growth.addTrait(21, Trait.magicEyeArousal);
+                            growth.addTrait(28, Trait.magicEyeFrenzy);
+                            growth.addTrait(32, Trait.magicEyeTrance);
+                            growth.addTrait(43, Trait.magicEyeEnthrall);
+                            if (Global.checkFlag(CASSIE_BREAST_FOCUS)) {
+                                growth.addTrait(47, Trait.beguilingbreasts);
+                            } else if (Global.checkFlag(CASSIE_MOUTH_FOCUS)) {
+                                growth.addTrait(47, Trait.soulsucker);
+                            }
+                            growth.addTrait(60, Trait.enchantingVoice);
+                            return true;
+                        })
+                    )
+                ));
         preferredAttributes.add(c -> c.get(Attribute.Arcane) < 80 ? Optional.of(Attribute.Arcane) : Optional.empty());
-        growth.addTrait(2, Trait.SexualGroove);
-        growth.addTrait(5, Trait.mojoMaster);
+        growth.addTrait(2, Trait.mojoMaster);
+        growth.addTrait(5, Trait.responsive);
         growth.addTrait(8, Trait.tongueTraining1);
-        growth.addTrait(11, Trait.pussyTraining1);
-        growth.addTrait(14, Trait.submissive);
+        // 11 - first choice 1
+        growth.addTrait(14, Trait.hawkeye);
         growth.addTrait(17, Trait.cute);
-        growth.addTrait(20, Trait.addictivefluids);
-        growth.addTrait(23, Trait.responsive);
-        growth.addTrait(26, Trait.calm);
-        growth.addTrait(29, Trait.tongueTraining2);
-        growth.addTrait(32, Trait.autonomousPussy);
-        growth.addTrait(35, Trait.desensitized);
-        growth.addTrait(38, Trait.tongueTraining3);
-        growth.addTrait(41, Trait.magicEyeEnthrall);
-        growth.addTrait(41, Trait.magicEyeTrance);
-        growth.addTrait(41, Trait.magicEyeArousal);
-        growth.addTrait(44, Trait.soulsucker);
-        growth.addTrait(47, Trait.pussyTraining2);
-        growth.addTrait(50, Trait.desensitized2);
-        growth.addTrait(53, Trait.lacedjuices);
-        growth.addTrait(56, Trait.obsequiousAppeal);
-        growth.addTrait(60, Trait.enchantingVoice);
+        // 21 - second choice 1
+        // 25 - second choice 2
+        // 28 - first choice 2
+        // 32 - second choice 3
+        growth.addTrait(35, Trait.SexualGroove);
+        // 38 - first choice 3
+        // 43 - second choice 4
+        // 47 - second choice 5
+        growth.addTrait(50, Trait.pussyTraining2);
+        growth.addTrait(53, Trait.addictivefluids);
+        // 57 - first choice 4
+        // 60 - second choice 6
+        
         // mostly feminine face, cute but not quite at Angel's level
         character.body.add(new FacePart(.1, 2.9));
-        growth.actions.put(20, () -> {
-            character.body.addReplace(new MouthPussyPart(), 1);
-        });
     }
 
     @Override
@@ -129,15 +222,8 @@ public class Cassie extends BasePersonality {
             character.gain(Item.Lactaid);
         }
         if (character.rank >= 1) {
-            if (!character.has(Trait.lactating) && character.money >= 1000) {
-                character.money -= 1000;
-                character.add(Trait.lactating);
-            }
             if (character.money > 0) {
                 Global.getDay().visit("Magic Training", character, Global.random(character.money));
-            }
-            if (character.money > 0) {
-                Global.getDay().visit("Body Shop", character, Global.random(character.money));
             }
             if (character.money > 0) {
                 Global.getDay().visit("Workshop", character, Global.random(character.money));
@@ -158,22 +244,11 @@ public class Cassie extends BasePersonality {
         }
         int r;
         for (int i = 0; i < time; i++) {
-            r = Global.random(4);
+            r = Global.random(8);
             if (r == 1) {
-                if (character.has(Trait.fitnessNut)) {
-                    character.getStamina().gain(Global.random(6) + 4);
-                }
-                character.getStamina().gain(Global.random(3) + 2);
-            } else if (r == 3) {
-                if (character.has(Trait.expertGoogler)) {
-                    character.getArousal().gain(5);
-                }
-                character.getArousal().gain(5);
-            } else if (r == 2) {
-                if (character.has(Trait.mojoMaster)) {
-                    character.getMojo().gain(Global.random(6) + 4);
-                }
-                character.getMojo().gain(Global.random(3) + 2);
+                Global.getDay().visit("Exercise", this.character, 0);
+            } else if (r == 0) {
+                Global.getDay().visit("Browse Porn Sites", this.character, 0);
             }
         }
         if (Global.getValue(Flag.CassieLoneliness) < 0) {
@@ -199,22 +274,21 @@ public class Cassie extends BasePersonality {
 
     @Override
     public String victory(Combat c, Result flag) {
-        if (flag == Result.anal) {
+        if (c.getStance().anallyPenetrated(c.getOther(character))) {
             character.arousal.empty();
             return "Cassie bucks her hips against your ass wildly causing the strapon to rub hard against your prostate. Your arms and legs feel like jelly as she thrusts in again and again. "
-                            + "Your almost shocked as you feel yourself on the edge of orgasm and your certain you wouldn't be able to stop yourself if Cassie keeps this pace up. Above you Cassie moans "
+                            + "You're almost shocked as you feel yourself on the edge of orgasm and you're certain you wouldn't be able to stop yourself if Cassie keeps this pace up. Above you Cassie moans "
                             + "loudly clearly in a world of her own. You don't think she even notices as the pleasure from your prostate overcomes you and you shoot your white flag of surrender on the "
                             + "ground. As you orgasm, Cassie's thrusting kicks up another notch and shortly afterwards she comes from the stimulation of the strapon rubbing against her clit. You both collapse "
                             + "to the ground and lie there for a minute or so catching your breaths. <i>\"I guess I got a bit too carried away and lost.\"</i> murmurs Cassie. You sigh internally and point out that "
                             + "you actually came while she was pegging you. <i>\"You came?\"</i> she gasps. <i>\"I mean the shopkeeper said it would work but....\"</i> she trails off.  She smiles, and stands. <i>\"I never knew "
                             + "I'd enjoy that so much.\"</i> Her grin widens in a way that makes you nervous. <i>\"I might need to try that again in the future.\"</i> Your decide to bid a hasty retreat leaving your "
                             + "clothes behind to the victor.";
-        }
-        if (character.has(Trait.witch) && character.has(Trait.silvertongue) && Global.random(3) == 0) {
+        } else if (character.has(Trait.witch) && character.has(Trait.silvertongue) && Global.random(3) == 0) {
             character.arousal.empty();
             return "Cassie's efforts to pleasure you finally break your resistance and you find yourself completely unable to stop her. She slips between your legs and takes your straining "
                             + "dick into her mouth. She eagerly sucks on your cock, while glancing up to meet your eyes. Her talented oral technique blows away your endurance and you spill your seed "
-                            + "into her mouth. She swallows your cum and smiles at you excitedly. <i>\"Gotcha. Did that feel good?\"</i> You nod and slump to the floor to catch your breathe.\n\nCassie goes "
+                            + "into her mouth. She swallows your cum and smiles at you excitedly. <i>\"Gotcha. Did that feel good?\"</i> You nod and slump to the floor to catch your breath.\n\nCassie goes "
                             + "quiet for a bit and you realize you still need to return the favor. <i>\"It's not that,\"</i> Cassie replies when you broach the subject. <i>\"I've just been learning a spell that "
                             + "I kinda want to try. Can we try it?\"</i> You nod your consent. You trust Cassie not to do anything really bad to you. She softly chants a spell with a fairly long incantation "
                             + "and then kisses you on the lips. <p><i>\"Let's see if it worked.\"</i> She seductively slides down your body to bring her face next to your now flaccid dick again. She licks and "
@@ -233,7 +307,7 @@ public class Cassie extends BasePersonality {
                             + "she regains consciousness. The feeling is noticeably singular and you feel somehow lonely as you realize her spell must have worn off. <i>\"Wow,\"</i> she lets out breathlessly. "
                             + "<i>\"That felt like I was 12 again and masturbating for the first time.\"</i> She suddenly turns bright red and hides her face in your chest. <i>\"You didn't hear that! Just pretend I "
                             + "didn't say anything.\"</i>";
-        } else if (flag == Result.intercourse) {
+        } else if (c.getStance().vaginallyPenetrated(character)) {
             return "You feel yourself rapidly nearing the point of no return as Cassie rides your dick. You fondle and tease her sensitive nipples to increase her pleasure, but it's a losing battle. You're "
                             + "going to cum first. She smiles gently and kisses you as you ejaculate inside her hot pussy. She shivers slightly, but you know she hasn't climaxed yet. When she breaks the kiss, her flushed "
                             + "face lights up in a broad smile. <i>\"It feels like you released a lot. Did you feel good?\"</i> You groan and slump flat on the ground in defeat. She gives you a light kiss on the tip of your nose "
@@ -243,7 +317,7 @@ public class Cassie extends BasePersonality {
                             + character.body.getLargestBreasts().describe(character)
                             + " to you. <i>\"Can you touch my nipples more? I really like that.\"</i> You reach up and play with "
                             + "her breasts as she continues to grind against you. She stops your pillow talk by kissing you desperately just before you feel her body tense up in orgasm. She collapses on top of you and kisses "
-                            + "you cheek contently. <i>\"I'll keep practicing and make you feel even better next time, \"</I> she tells you happily. <i>\"I promise.\"</i> ";
+                            + "your cheek contently. <i>\"I'll keep practicing and make you feel even better next time, \"</i> she tells you happily. <i>\"I promise.\"</i> ";
         } else if (character.arousal.percent() > 50) {
             character.arousal.empty();
             return "Despite your best efforts, you realize you've lost to Cassie's diligant manipulation of your penis. It takes so much focus to hold back your ejaculation "
@@ -267,24 +341,19 @@ public class Cassie extends BasePersonality {
 
     @Override
     public String defeat(Combat c, Result flag) {
-        Character opponent;
-        if (c.p1 == character) {
-            opponent = c.p2;
-        } else {
-            opponent = c.p1;
-        }
+        Character opponent = c.getOther(character);
         if (character.has(Trait.witch) && Global.random(3) == 0) {
             opponent.add(c, new Energized(opponent, 10));
             return "You capture Cassie's lips and slip your hand between her legs to facilitate her imminent orgasm. You rub her soaked pussy lips and she moans against your lips. Her body "
                             + "tenses as she clings to you, letting you know she's reached her climax. You keep rubbing her petals as she starts to relax. She shows no sign of breaking the kiss or "
-                            + "letting you go, so you decide to see if you can give her consecutive orgams.<p>You dig your fingers into Cassie's sensitive pussy and rub her insides. She eyes open "
+                            + "letting you go, so you decide to see if you can give her consecutive orgams.<p>You dig your fingers into Cassie's sensitive pussy and rub her insides. Her eyes open "
                             + "wide and she lets out a noise of surprise. You tease her tongue with your own and she melts against you again. It only takes a few minutes before her pussy squeezes your "
                             + "fingers and she hits her second orgasm. Your fingers don't even slow down this time. You move away from her lips to focus on licking and sucking her neck. Her pussy twitches "
                             + "erraticly as you finger her. <i>\"It's so intense! I can't stop twitching!\"</i> She moans plaintively, but she doesn't seem to dislike it. <i>\"I love it! But I think I'm going to die!\"</i> "
                             + "You've been going easy on her clit up until now, but now you rub it firmly with your thumb and gently bite down on her collarbone. She screams in pleasure through her third orgasm, "
                             + "which lasts much longer than her first two.<p>Cassie goes limp as you hold her tenderly. You haven't had any release, but she seems in no condition to help now. She makes "
                             + "a content noise and looks ready to fall asleep in your arms. You tickle her lightly and remind her that the match isn't over. <i>\"Can't go on,\"</i> She murmers sleepily. <i>\"Already "
-                            + "dead. You've slain me.\"</i> She looks at you with half closed eyes. <i>\"You must be an angel, you're practically glowing.\"</i><p>Suddenly her eyes go wide and she sits bolt upright. "
+                            + "dead. You've slain me.\"</i> She looks at you with half closed eyes. <i>\"You must be an angel, you're practically glowing.\"</i><p>Suddenly her eyes go wide and she bolts upright. "
                             + "<i>\"You are glowing! You've got all my mana.\"</i> You look at your hands, which do seem to be faintly glowing and you feel unusually energized. Cassie groans quietly. <i>\"When a "
                             + "mage orgasms, she releases some of her mana. You made me cum so much I don't have enough mana left to use my magic. Give it back!\"</i> She looks on the verge of tears, but you "
                             + "don't actually know how to return her magic energy. She pushes you onto your back and straddles your unsatisfied erection. <i>\"We can fix this,\"</i> she mutters as she guides your "
@@ -330,7 +399,31 @@ public class Cassie extends BasePersonality {
 
     @Override
     public String draw(Combat c, Result flag) {
+        Character opponent=c.getOther(character);
         if (flag == Result.intercourse) {
+            if (character.has(Trait.witch) && opponent.getPure(Attribute.Arcane) >= 4 && character.getAffection(opponent) >= 12 && Global.random(2) == 0) {
+                return "You thrust your hips in time with Cassie's, pushing you both closer to orgasm. At this rate, it seems a draw is pretty much certain. If you pulled out, "
+                                + "there's a chance you could change tactics and take the advantage, but right at this moment, it feels like there are more important things than winning.<p> "
+                                + "Cassie interlocks her fingers with yours, her eyes filled with desire and pleasure."
+                                + "<i>\"Together! Please\"</i> She manages to gasp between moans. You're quite happy to oblige. You grind against her hips while kissing her deeply. She presses "
+                                + "against your body as her tongue eagerly engages yours.<p>"
+                                + "As you feel your climax near, you're aware of your mana stirring inside you. A soft glow emanates from Cassie as her own magical energy responds. You can "
+                                + "sense it gathering everywhere your skin touches hers, attracted like opposite charges. Your bodies shudder in simultaneous orgasm as the flood gates "
+                                + "burst. A cascade of mana surges through you both, threatening to drown you in pleasure. You hold Cassie close as you both weather the storm of sensation. "
+                                + "You finally remember to breath again as the reaction dies down."
+                                + "<i>\"That felt so good, I thought I was on my way to heaven.\"</i> Cassie rests limply against you, too exhausted to move. You're in no hurry to move. You "
+                                + "simply bask in her warmth, filled with exhaustion, satisfaction, and a deep sense of love. It takes you a moment to realize the emotions aren't your own. "
+                                + "It's hard to articulate, but you can sense that feelings are flowing into you from Cassie. She looks at you in surprise, clearly feeling the same thing. In "
+                                + "fact, you know for sure she's feeling the same.<p>"
+                                + "<i>\"You too, right? Ah!\"</i> Realization suddenly dawns on her. <i>\"I think I read about this. We must have been emotionally in synch when the mana loop "
+                                + "occurred. Our emotions will keep leaking out as long as we're... connected.\"</i> She casts a meaningful glance downward to where you're still penetrating "
+                                + "her. You've apparently stumbled onto the ultimate form of afterglow. Only possible with two magic users under very specific circumstances. You kiss her "
+                                + "softly, indulging in the warm feelings she's letting out.<p>"
+                                + "You feel a strange giddy nervousness seize your heart as Cassie turns bright red. She smiles sheepishly as she pulls her hips away, breaking the bond. "
+                                + "<i>\"Sorry.\"</i> She whispers. <i>\"I'm really happy. Really really happy, but I don't think I can handle you knowing everything I feel for very long.\"</i> "
+                                + "She snuggles up to you again, her clear blue eyes staring into yours. <i>\"A girl's heart is suppose to be mysterious. I can't reveal all its secrets "
+                                + "to a boy. You'll just need to figure out what I'm feeling the old fashioned way.\"</i>";
+            }
             return "You and Cassie move your hips against each other, both rapidly approaching orgasm. As you thrust again and again into her tight folds, you feel yourself pass "
                             + "the point of no return. You need to make her cum, now! You kiss her passionately, forcing your tongue into her mouth. The deep kiss combined with your continous "
                             + "thrusting have the desired effect. She embraces you tightly as her climax washes over her. At the same time, you fill her womb with your seed. You didn't quite "
@@ -395,7 +488,7 @@ public class Cassie extends BasePersonality {
         if (target.human()) {
             return "Cassie positions herself between your legs, enjoying her unrestricted access to your naked body. She lightly runs her fingers along the length of your "
                             + "erection and places a kiss on the tip. <i>\"Don't worry,\"</i> she whispers happily. <i>\"I'm going to make sure you enjoy this.\"</i> She slowly begins licking and "
-                            + "sucking you penis like a popsickle. You tremble helplessly as she gradually brings you closer and closer to your defeat. A low grunt is the only warning "
+                            + "sucking you penis like a popsicle. You tremble helplessly as she gradually brings you closer and closer to your defeat. A low grunt is the only warning "
                             + "you can give of your approaching climax, but Cassie picks up on it. She backs off your dick just far enough to circle her tongue around the sensitive head, "
                             + "pushing you over the edge. You shoot your load over her face and glasses as she pumps your shaft with her hand.";
         }
@@ -461,7 +554,7 @@ public class Cassie extends BasePersonality {
                         + "you romantically. You embrace her and start thrusting your hips against her. She matches her movements to your slow, but pleasurable strokes. You both take your time, "
                         + "more interested in feeling each other's closeness than in reaching orgasm, but gradually you both feel your pleasure building. Cassie buries her face in your chest, letting "
                         + "out hot, breathy moans. You run you hands through her hair and softly stroke her back and the nape of her neck. It's hard to tell whether her orgasm set off your ejaculation "
-                        + "or the other way around, but you release your load into her shuddering pussy. Neither of you make any movement to seperate from each other. Remaining inside her until morning "
+                        + "or the other way around, but you release your load into her shuddering pussy. Neither of you make any movement to separate from each other. Remaining inside her until morning "
                         + "sounds quite nice. <i>\"I love you.\"</i> The whisper was so soft you're not sure you heard it. When you look at Cassie's face, she's fast asleep.";
     }
 

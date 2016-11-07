@@ -4,7 +4,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.stream.Collectors;
 
-import org.json.simple.JSONObject;
+import com.google.gson.JsonObject;
 
 import nightgames.characters.Attribute;
 import nightgames.characters.Character;
@@ -12,31 +12,22 @@ import nightgames.characters.Emotion;
 import nightgames.characters.body.BodyPart;
 import nightgames.combat.Combat;
 import nightgames.global.Global;
-import nightgames.global.JSONUtils;
 import nightgames.skills.AssFuck;
 import nightgames.skills.Carry;
-import nightgames.skills.CounterDrain;
-import nightgames.skills.CounterRide;
-import nightgames.skills.Engulf;
 import nightgames.skills.Fly;
 import nightgames.skills.Fuck;
-import nightgames.skills.Grind;
 import nightgames.skills.Invitation;
 import nightgames.skills.LegLock;
-import nightgames.skills.Piston;
 import nightgames.skills.ReverseAssFuck;
 import nightgames.skills.ReverseCarry;
 import nightgames.skills.ReverseFly;
 import nightgames.skills.ReverseFuck;
 import nightgames.skills.Shove;
 import nightgames.skills.Skill;
-import nightgames.skills.SpiralThrust;
 import nightgames.skills.Straddle;
 import nightgames.skills.SubmissiveHold;
 import nightgames.skills.Tackle;
 import nightgames.skills.Tear;
-import nightgames.skills.Thrust;
-import nightgames.skills.Tighten;
 import nightgames.skills.ToggleKnot;
 import nightgames.skills.Undress;
 import nightgames.skills.WildThrust;
@@ -55,7 +46,6 @@ public class Frenzied extends DurationStatus {
         FUCK_SKILLS.add(new Straddle(p));
         FUCK_SKILLS.add(new Tear(p));
         FUCK_SKILLS.add(new Undress(p));
-        FUCK_SKILLS.add(new Engulf(p)); // Probably?
         FUCK_SKILLS.add(new Fly(p));
         FUCK_SKILLS.add(new Fuck(p));
         FUCK_SKILLS.add(new Invitation(p));
@@ -175,7 +165,10 @@ public class Frenzied extends DurationStatus {
 
     @Override
     public void tick(Combat c) {
-        if (!c.getStance().inserted(affected)) {
+        if (c == null) {
+            affected.removelist.add(this);
+            affected.removeStatusNoSideEffects();
+        } else if (!c.getStance().inserted(affected)) {
             affected.removelist.add(this);
         } else {
             setDuration(getDuration() + 2);
@@ -195,17 +188,14 @@ public class Frenzied extends DurationStatus {
                         .map(s -> s.copy(affected)).collect(Collectors.toSet());
     }
 
-    @Override
-    @SuppressWarnings("unchecked")
-    public JSONObject saveToJSON() {
-        JSONObject obj = new JSONObject();
-        obj.put("type", getClass().getSimpleName());
-        obj.put("duration", getDuration());
+    @Override  public JsonObject saveToJson() {
+        JsonObject obj = new JsonObject();
+        obj.addProperty("type", getClass().getSimpleName());
+        obj.addProperty("duration", getDuration());
         return obj;
     }
 
-    @Override
-    public Status loadFromJSON(JSONObject obj) {
-        return new Frenzied(null, JSONUtils.readInteger(obj, "duration"));
+    @Override public Status loadFromJson(JsonObject obj) {
+        return new Frenzied(null, obj.get("duration").getAsInt());
     }
 }

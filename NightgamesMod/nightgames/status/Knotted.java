@@ -1,17 +1,15 @@
 package nightgames.status;
 
-import java.util.Arrays;
+import static nightgames.requirements.RequirementShortcuts.inserted;
+import static nightgames.requirements.RequirementShortcuts.rev;
 
-import org.json.simple.JSONObject;
+import com.google.gson.JsonObject;
 
 import nightgames.characters.Attribute;
 import nightgames.characters.Character;
 import nightgames.characters.Emotion;
 import nightgames.characters.body.BodyPart;
-import nightgames.characters.custom.requirement.InsertedRequirement;
-import nightgames.characters.custom.requirement.ReverseRequirement;
 import nightgames.combat.Combat;
-import nightgames.global.JSONUtils;
 
 public class Knotted extends Status {
 
@@ -22,7 +20,7 @@ public class Knotted extends Status {
         super("Knotted", affected);
         opponent = other;
         this.anal = anal;
-        requirements.add(new ReverseRequirement(Arrays.asList(new InsertedRequirement(true))));
+        requirements.add(rev(inserted()));
         flag(Stsflag.knotted);
         flag(Stsflag.purgable);
     }
@@ -40,7 +38,8 @@ public class Knotted extends Status {
         if (affected.human()) {
             return opponent.nameOrPossessivePronoun() + " knotted dick is lodged inside of you, preventing escape.";
         } else {
-            return "The knot in you dick is keeping it fully entrenched within " + affected.name() + ".";
+            return "The knot in "+opponent.nameOrPossessivePronoun()+
+                            " dick is keeping it fully entrenched within " + affected.name() + ".";
         }
     }
 
@@ -111,7 +110,7 @@ public class Knotted extends Status {
     public float fitnessModifier() {
         // This is counted twice, but that's intentional.
         // (The other place is Character#getFitness())
-        return affected.body.penetrationFitnessModifier(false, anal, opponent.body);
+        return affected.body.penetrationFitnessModifier(affected, opponent, false, anal);
     }
 
     @Override
@@ -124,18 +123,15 @@ public class Knotted extends Status {
         return new Knotted(newAffected, newOther, anal);
     }
 
-    @Override
-    @SuppressWarnings("unchecked")
-    public JSONObject saveToJSON() {
-        JSONObject obj = new JSONObject();
-        obj.put("type", getClass().getSimpleName());
-        obj.put("anal", anal);
+    @Override  public JsonObject saveToJson() {
+        JsonObject obj = new JsonObject();
+        obj.addProperty("type", getClass().getSimpleName());
+        obj.addProperty("anal", anal);
         return obj;
     }
 
-    @Override
-    public Status loadFromJSON(JSONObject obj) {
-        return new Knotted(null, null, JSONUtils.readBoolean(obj, "anal"));
+    @Override public Status loadFromJson(JsonObject obj) {
+        return new Knotted(null, null, obj.get("anal").getAsBoolean());
     }
 
 }

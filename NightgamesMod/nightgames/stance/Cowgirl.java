@@ -16,8 +16,10 @@ public class Cowgirl extends FemdomSexStance {
         if (top.human()) {
             return "You're on top of " + bottom.name() + ".";
         } else {
-            return top.name()
-                            + " is riding you in Cowgirl position. Her breasts bounce in front of your face each time she moves her hips.";
+            return String.format("%s is riding %s in Cowgirl position. %s breasts bounce in front of %s"
+                            + " face each time %s moves %s hips.", top.subject(), bottom.nameDirectObject(),
+                            Global.capitalizeFirstLetter(top.possessivePronoun()), bottom.possessivePronoun(),
+                            top.pronoun(), top.possessivePronoun());
         }
     }
 
@@ -95,5 +97,10 @@ public class Cowgirl extends FemdomSexStance {
             return new UpsideDownFemdom(top, bottom);
         }
         return new Cowgirl(top, bottom);
+    }
+    
+    @Override
+    public int dominance() {
+        return 3;
     }
 }

@@ -1,6 +1,6 @@
 package nightgames.status;
 
-import org.json.simple.JSONObject;
+import com.google.gson.JsonObject;
 
 import nightgames.characters.Attribute;
 import nightgames.characters.Character;
@@ -23,7 +23,7 @@ public class Lovestruck extends DurationStatus {
         if (affected.human()) {
             return "You feel an irresistable attraction to " + other.nameDirectObject() + ".";
         } else {
-            return affected.name() + " is looking at you like a lovestruck teenager.";
+            return affected.name() + " is looking at "+other.nameDirectObject()+" like a lovestruck teenager.";
         }
     }
 
@@ -112,16 +112,13 @@ public class Lovestruck extends DurationStatus {
         return new Lovestruck(newAffected, null, getDuration());
     }
 
-    @Override
-    @SuppressWarnings("unchecked")
-    public JSONObject saveToJSON() {
-        JSONObject obj = new JSONObject();
-        obj.put("type", getClass().getSimpleName());
+    @Override  public JsonObject saveToJson() {
+        JsonObject obj = new JsonObject();
+        obj.addProperty("type", getClass().getSimpleName());
         return obj;
     }
 
-    @Override
-    public Status loadFromJSON(JSONObject obj) {
+    @Override public Status loadFromJson(JsonObject obj) {
         return new Lovestruck(null, null, getDuration());
     }
 }

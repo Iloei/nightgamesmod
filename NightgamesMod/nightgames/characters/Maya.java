@@ -1,14 +1,16 @@
 package nightgames.characters;
 
+import java.util.Optional;
+
 import nightgames.characters.body.BreastsPart;
 import nightgames.characters.body.CockMod;
-import nightgames.characters.body.PussyPart;
 import nightgames.combat.Combat;
 import nightgames.combat.Result;
 import nightgames.global.Flag;
 import nightgames.global.Global;
 import nightgames.items.Item;
 import nightgames.items.clothing.Clothing;
+import nightgames.start.NpcConfiguration;
 import nightgames.status.Drowsy;
 import nightgames.status.Energized;
 
@@ -16,8 +18,19 @@ public class Maya extends BasePersonality {
 
     private static final long serialVersionUID = 447375506153223682L;
 
-    public Maya(int playerLvl) {
-        super("Maya", 50);
+    public Maya(int playerLevel) {
+        this(playerLevel, Optional.empty(), Optional.empty());
+    }
+
+    public Maya(int playerLevel, Optional<NpcConfiguration> charConfig, Optional<NpcConfiguration> commonConfig) {
+        super("Maya", 50, charConfig, commonConfig);
+
+        while (character.getLevel() < playerLevel + 20) {
+            character.ding();
+        }
+    }
+
+    protected void applyBasicStats() {
         character.outfitPlan.add(Clothing.getByID("camisole"));
         character.outfitPlan.add(Clothing.getByID("blouse"));
         character.outfitPlan.add(Clothing.getByID("lacepanties"));
@@ -31,8 +44,8 @@ public class Maya extends BasePersonality {
         character.set(Attribute.Speed, 17);
         character.set(Attribute.Power, 36);
         character.set(Attribute.Hypnosis, 8);
-        character.getStamina().setMax(250);
-        character.getArousal().setMax(600);
+        character.getStamina().setMax(90 + character.getLevel() * getGrowth().stamina);
+        character.getArousal().setMax(150 + character.getLevel() * getGrowth().arousal);
         character.getMojo().setMax(350);
         character.getWillpower().setMax(100);
         character.add(Trait.darkpromises);
@@ -62,14 +75,11 @@ public class Maya extends BasePersonality {
         character.add(Trait.cursed);
         Global.gainSkills(character);
         character.setTrophy(Item.MayaTrophy);
-        while (character.getLevel() < playerLvl + 20) {
-            character.ding();
-        }
+
         character.plan = Plan.hunting;
         character.mood = Emotion.confident;
         character.body.add(BreastsPart.d);
-        character.body.add(PussyPart.normal);
-        character.body.finishBody(CharacterSex.female);
+        character.initialGender = CharacterSex.female;
         preferredCockMod = CockMod.error;
     }
 
@@ -260,8 +270,8 @@ public class Maya extends BasePersonality {
                         + "exhausted. You hear a lovely giggle, almost melodic, coming from Maya. Her"
                         + " giggles turn into unrestrained laughter as she rolls onto her back."
                         + " <i>\"A draw!\"</i> Her mature air of dignity is gone as she shakes with"
-                        + " mirth. <i>\"Barely a draw! I had to struggle to acheive a mutual orgasm!"
-                        + " Against a rookie, no less! God, I haven't felt this human in years!.\""
+                        + " mirth. <i>\"Barely a draw! I had to struggle to achieve a mutual orgasm!"
+                        + " Against a rookie, no less! God, I haven't felt this human in years!\""
                         + "</i> She sits up, more breathless from her laughter than the sex.<p><i>"
                         + "\"Sorry. It probably sounds like I'm disparaging you, but I thought there"
                         + " was only one man who could do that to me anymore.\"</i> She wears a "
@@ -350,31 +360,31 @@ public class Maya extends BasePersonality {
 
     @Override
     public String resist3p(Combat c, Character assist, Character target) {
-        if (target.human()) {
-            return "As you attempt to hold off Maya, you see " + assist.name()
+        if (assist.human()) {
+            return "As you attempt to hold off Maya, you see " + target.name()
                             + " stealthily approaching behind her. Looks like you're about to get "
                             + "some help. Maya suddenly "
                             + "winks at you and her foot darts up almost playfully between your legs."
                             + " She barely seemed to use any force, but the impact is still staggering. "
-                            + "You crumple to the floor, holding your balls in debilitating pain.<p>" + assist.name()
+                            + "You crumple to the floor, holding your balls in debilitating pain.<p>" + target.name()
                             + " hesitates, realizing she doesn't have the advantage of superior numbers. Maya is already moving, though, and pounces on the other girl "
                             + "before she can escape. From your position on the floor, you can't see exactly what is happening, but it's clear Maya is overwhelming her. As soon as the "
                             + "pain subsides, you force yourself back to your feet. You'd hoped to team up with "
-                            + assist.name() + ", but she is already trembling in orgasm under Maya's "
+                            + target.name() + ", but she is already trembling in orgasm under Maya's "
                             + "fingers. The older girl returns her attention to you and smiles. <i>\"Sorry about the interruption. Where were we?\"</i>";
         }
-        return target.name()
+        return assist.name()
                         + " isn't likely to be able to hold off Maya on her own. Your best bet is to work together to take her down. You creep up behind her, with Maya "
                         + "showing no sign of noticing you. When you've gotten close enough, you lunge toward her, hoping to catch her from behind. To your surprise, she vanishes the "
-                        + "moment you touch her and you stumble forward into " + target.name()
+                        + "moment you touch her and you stumble forward into " + assist.name()
                         + ". You turn around and see Maya standing a couple feet away. You've lost the element of "
                         + "surprise (you probably never had it), but it's still 2 on 1.<br>" + "You suddenly feel "
-                        + target.name()
+                        + assist.name()
                         + " grab you from behind. You turn your head and notice her eyes are dull and unfocused. Maya must have hypnotized her to "
                         + "help trap you. Maya speaks up in a melodic voice. <i>\"How rude of you to interrupt a perfectly enjoyable fight. Naughty boys should be punished.\"</i> She strips off your clothes and "
                         + "runs her fingers over your exposed dick. You immediately grow hard under her touch. She's too skilled with her hands for you to hold back and you're completely "
                         + "unable to defend yourself. She makes you cum embarrassingly quickly and both girls discard you unceremoniously to the floor. Maya snaps her fingers in front of "
-                        + target.name()
+                        + assist.name()
                         + "'s face to bring her out of the trance and the girl looks down at your defeated form in confusion. <i>\"Thank you for your cooperation. Now we can "
                         + "continue our fight without interruption.\"</i>";
     }

@@ -11,11 +11,12 @@ import nightgames.global.Global;
 import nightgames.items.Item;
 import nightgames.items.clothing.Clothing;
 import nightgames.stance.Stance;
+import nightgames.status.Stsflag;
 
 public class Strapon extends Skill {
 
     public Strapon(Character self) {
-        super("Strap On", self, 6);
+        super("Strap On", self, 15);
     }
 
     @Override
@@ -47,25 +48,33 @@ public class Strapon extends Skill {
         if (unequipped.isEmpty()) {
             if (getSelf().human()) {
                 c.write(getSelf(), Global.capitalizeFirstLetter(deal(c, 0, Result.normal, target)));
-            } else {
+            } else if (!target.is(Stsflag.blinded)) {
                 c.write(getSelf(), Global.capitalizeFirstLetter(receive(c, 0, Result.normal, target)));
+            } else {
+                printBlinded(c);
             }
         } else {
             if (getSelf().human()) {
                 c.write(getSelf(), "You take off your " + unequipped.get(0)
                                 + " and fasten a strap on dildo onto yourself.");
-            } else {
+            } else if (!target.is(Stsflag.blinded)){
                 c.write(getSelf(),
-                                getSelf().subject() + " takes off " + getSelf().possessivePronoun() + " "
-                                                + unequipped.get(
-                                                                0)
-                                + " and straps on a thick rubber cock and grins at you in a way that makes you feel a bit nervous.");
-            }
+                                String.format("%s takes off %s %s and straps on a thick rubber "
+                                                + "cock and grins at %s in a way that makes %s feel a bit nervous.",
+                                                getSelf().subject(), getSelf().possessivePronoun(),
+                                                unequipped.get(0), target.nameDirectObject(),
+                                                target.directObject()));
+            } else printBlinded(c);
         }
-        target.loseMojo(c, 10);
-        target.emote(Emotion.nervous, 10);
+        if (!target.is(Stsflag.blinded)) {
+            target.loseMojo(c, 10);
+            target.emote(Emotion.nervous, 10);
+        }
         getSelf().emote(Emotion.confident, 30);
         getSelf().emote(Emotion.dominant, 40);
+        Item lost = getSelf().has(Item.Strapon2) ? Item.Strapon2 : Item.Strapon;
+        c.getCombatantData(getSelf()).loseItem(lost);
+        getSelf().remove(lost);
         return true;
     }
 
@@ -76,7 +85,7 @@ public class Strapon extends Skill {
 
     @Override
     public Tactics type(Combat c) {
-        return Tactics.positioning;
+        return Tactics.misc;
     }
 
     @Override
@@ -86,8 +95,9 @@ public class Strapon extends Skill {
 
     @Override
     public String receive(Combat c, int damage, Result modifier, Character target) {
-        return getSelf().name()
-                        + " straps on a thick rubber cock and grins at you in a way that makes you feel a bit nervous.";
+        return String.format("%s straps on a thick rubber cock and grins in a way that "
+                        + "makes %s feel a bit nervous.", getSelf().subject(),
+                        target.nameDirectObject());
     }
 
 }
